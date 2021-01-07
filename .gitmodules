@@ -1,0 +1,3 @@
+[submodule "OldPathTracer"]
+	path = OldPathTracer
+	url = https://github.com/Unknown6656/PathTracer
