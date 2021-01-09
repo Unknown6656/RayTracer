@@ -28,7 +28,10 @@ struct Triangle
     : virtual public Shape
 {
     const Vec3 A, B, C;
+private:
+    /// THIS IS NOT NORMALIZED !
     const Vec3 Normal;
+public:
 
 
     Triangle() noexcept : Triangle(Vec3(), Vec3(), Vec3()) { }
@@ -38,7 +41,7 @@ struct Triangle
         , A(a)
         , B(b)
         , C(c)
-        , Normal(b.sub(a).cross(c.sub(a)).normalize())
+        , Normal(b.sub(a).cross(c.sub(a)))
     {
     }
 
@@ -49,61 +52,51 @@ struct Triangle
 
     virtual bool intersect(const Ray& ray, double* const __restrict distance, bool* const __restrict inside) const
     {
-        return false;
-        std::cout << ray << std::endl;
+        // möller trumbore intersection algorithm
 
+        const Vec3 edgeAB = B.sub(A);
+        const Vec3 edgeAC = C.sub(A);
+        const double a = Normal.dot(ray.Direction);
 
-        const Vec3 v0v1 = B.sub(A);
-        const Vec3 v0v2 = C.sub(A);
-        //const Vec3 N = v0v1.crossProduct(v0v2);
+        std::stringstream ss; ss << A << B << C << " ray=" << ray << " ";
 
-        const double cos_angle = Normal.dot(ray.Direction);
-
-        if (fabs(cos_angle) < EPSILON)
+        if (fabs(a) < EPSILON)
         {
-            printf("parallel\n");
+            ss << "parallel\n"; std::cout << ss.str();
             return false;
         }
 
-        const double d = Normal.dot(A);
-        
-        *distance = (Normal.dot(ray.Origin) + d) / cos_angle;
+        const double f = 1.0 / a;
 
-        if (*distance < 0)
+        auto s = ray.Origin.sub(A);
+        auto u = f * s.dot(Normal);
+
+        if (u < 0.0 || u > 1.0)
         {
-            printf("behind origin\n");
+            ss << "u:" << u << "\n"; std::cout << ss.str();
             return false;
         }
 
-        const Vec3 P = ray.evaluate(*distance);
-        Vec3 C = v0v1.cross(P.sub(A));
+        auto q = s.cross(edgeAC);
+        auto v = f * ray.Direction.dot(q);
 
-        if (Normal.dot(C) < 0)
+        if (v < 0.0 || (u + v) > 1.0)
         {
-            printf("outside A-B\n");
+            ss << "v:" << v << ", u+v:" << u+v << "\n"; std::cout << ss.str();
             return false;
         }
 
-        C = v0v2.cross(P.sub(B));
+        *distance = f * edgeAC.dot(q);
 
-        if (Normal.dot(C) < 0)
+        if (*distance < EPSILON)
         {
-            printf("outside A-C\n");
+            ss << "behind origin "<< *distance << "\n"; std::cout << ss.str();
             return false;
         }
-
-        C = A.sub(B).cross(P.sub(C));
-
-        if (Normal.dot(C) < 0)
-        {
-            printf("outside B-C\n");
-            return false;
-        }
-
 
         *inside = ray.Direction.dot(Normal) > 0;
 
-        printf("hit\n");
+        ss << "hit\n"; std::cout << ss.str();
         return true;
     }
 };
