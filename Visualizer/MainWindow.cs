@@ -28,9 +28,9 @@ namespace Visualizer
         public const int SUBPIXELS = 1;
 #endif
         public const RenderMode MODE = RenderMode.Colors;
-        public const double FOV = 1.57; // 90°
-        public const double FOCAL_LENGTH = 1;
-        public static readonly Vec3 EYE = new(-10, 20, 50);
+        public const double ZOOM = 1;
+        public const double FOCAL_LENGTH = .3;
+        public static readonly Vec3 EYE = new(0, 0, 50);
         public static readonly Vec3 TARGET = new(0, 0, 0);
 
 
@@ -55,7 +55,7 @@ namespace Visualizer
                     {
                         Position = EYE,
                         LookAt = TARGET,
-                        FOV = FOV,
+                        ZoomFactor = ZOOM,
                         FocalLength = FOCAL_LENGTH,
                     },
                     RenderMode = MODE,

@@ -83,6 +83,10 @@ void RenderImage(RenderConfiguration const config, ARGB* const buffer)
                                 color = result[0].SurfaceNormal;
 
                                 break;
+                            case RenderMode::RayDirection:
+                                color = ray.Direction.add(Vec3(1)).scale(.5);
+
+                                break;
                             case RenderMode::Iterations:
                                 color = ARGB(1.0 - result.size() / double(config.MaximumIterationCount));
 
@@ -120,29 +124,18 @@ void RenderImage(RenderConfiguration const config, ARGB* const buffer)
 
 Ray CreateRay(const CameraConfiguration& camera, const double w, const double h, const double x, const double y)
 {
+    const double fov = 1.57079632679 / camera.ZoomFactor;
     const Vec3 gaze = camera.LookAt.sub(camera.Position).normalize();
     const Vec3 up = Vec3::UnitY;
-    const Vec3 camx = gaze.cross(up).normalize().scale(w * camera.FOV / h);
-    const Vec3 camy = camx.cross(gaze).normalize().scale(camera.FOV);
-
-    const double dx(0.0), dy(0.0);
-
-    /*
-    const double u1 = 2.0 * DOUBLE_RAND;
-    const double u2 = 2.0 * DOUBLE_RAND;
-    const double dx = u1 < 1 ? std::sqrt(u1) - 1 : 1 - std::sqrt(2 - u1);
-    const double dy = u2 < 1 ? std::sqrt(u2) - 1 : 1 - std::sqrt(2 - u2);
-    const Vec3 dir = gaze + cx.scale((dx + x) / w - .5)
-                          + cy.scale((dy + y) / h - .5);
-    */
-
-    const Vec3 dir = gaze.add(camx.scale((dx + x) / w - .5))
-                         .add(camy.scale((dy + y) / h - .5))
+    const Vec3 camx = gaze.cross(up).normalize().scale(w * fov / h);
+    const Vec3 camy = camx.cross(gaze).normalize().scale(fov);
+    const double dx = 2 * DOUBLE_RAND / w;
+    const double dy = 2 * DOUBLE_RAND / h;
+    const Vec3 dir = gaze.add(camx.scale(x + dx))
+                         .add(camy.scale(y + dy))
                          .normalize();
 
     Ray r(camera.Position + dir.scale(camera.FocalLength), dir, 0);
-
-    printf("%s %s° %f\n", r.to_string().c_str(), gaze.to_string().c_str(), std::acos(dir.dot(gaze))/3.1415*180);
 
     return r;
 }

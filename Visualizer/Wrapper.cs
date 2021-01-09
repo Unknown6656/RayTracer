@@ -8,6 +8,7 @@ namespace Visualizer
         Colors,
         Depths,
         SurfaceNormals,
+        RayDirection,
         Iterations,
         RenderTime,
     }
@@ -23,7 +24,7 @@ namespace Visualizer
     {
         public Vec3 Position;
         public Vec3 LookAt;
-        public double FOV;
+        public double ZoomFactor;
         public double FocalLength;
     }
 

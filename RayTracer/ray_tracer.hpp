@@ -8,6 +8,7 @@ enum RenderMode
     Colors,
     Depths,
     SurfaceNormals,
+    RayDirection,
     Iterations,
     RenderTime,
 };
@@ -16,7 +17,7 @@ struct CameraConfiguration
 {
     Vec3 Position;
     Vec3 LookAt;
-    double FOV;
+    double ZoomFactor;
     double FocalLength;
 };
 
