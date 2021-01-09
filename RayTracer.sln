@@ -5,16 +5,33 @@ VisualStudioVersion = 16.0.30804.86
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RayTracer", "RayTracer\RayTracer.vcxproj", "{A0C7B7E8-8783-415C-841B-0572489C2992}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Visualizer", "Visualizer\Visualizer.csproj", "{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}"
+	ProjectSection(ProjectDependencies) = postProject
+		{A0C7B7E8-8783-415C-841B-0572489C2992} = {A0C7B7E8-8783-415C-841B-0572489C2992}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
+		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A0C7B7E8-8783-415C-841B-0572489C2992}.Debug|Any CPU.ActiveCfg = Debug|Win32
 		{A0C7B7E8-8783-415C-841B-0572489C2992}.Debug|x64.ActiveCfg = Debug|x64
 		{A0C7B7E8-8783-415C-841B-0572489C2992}.Debug|x64.Build.0 = Debug|x64
+		{A0C7B7E8-8783-415C-841B-0572489C2992}.Release|Any CPU.ActiveCfg = Release|Win32
 		{A0C7B7E8-8783-415C-841B-0572489C2992}.Release|x64.ActiveCfg = Release|x64
 		{A0C7B7E8-8783-415C-841B-0572489C2992}.Release|x64.Build.0 = Release|x64
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Debug|x64.Build.0 = Debug|Any CPU
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Release|x64.ActiveCfg = Release|Any CPU
+		{B23449C2-AE5B-4FCD-9EBA-B32548BAD07D}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

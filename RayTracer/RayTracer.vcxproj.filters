@@ -18,6 +18,12 @@
     <ClInclude Include="ray_tracer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ray.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="triangle.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ray_tracer.cpp">
