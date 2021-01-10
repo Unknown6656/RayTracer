@@ -147,6 +147,25 @@ struct Vec3
             return scale(eta).add(normal.scale(eta * theta - std::sqrt(k)));
     }
 
+    inline Vec3 transform(const std::vector<double>& matrix) const noexcept
+    {
+        return Vec3(
+            matrix[0] * X + matrix[1] * Y + matrix[2] * Z,
+            matrix[3] * X + matrix[4] * Y + matrix[5] * Z,
+            matrix[6] * X + matrix[7] * Y + matrix[8] * Z
+        );
+    }
+
+    inline Vec3 rotate(const double& euler_x, const double& euler_y, const double& euler_z) const noexcept
+    {
+        return transform(create_rotation_matrix(euler_x, euler_y, euler_z));
+    }
+
+    inline Vec3 rotate(const Vec3& euler_angles) noexcept
+    {
+        return rotate(euler_angles.X, euler_angles.Y, euler_angles.Z);
+    }
+
     std::string to_string() const noexcept
     {
         std::stringstream ss;
@@ -155,8 +174,29 @@ struct Vec3
         return ss.str();
     }
 
-    OSTREAM_OPERATOR(Vec3);
+    static std::vector<double> create_rotation_matrix(const Vec3& euler_angles) noexcept
+    {
+        return create_rotation_matrix(euler_angles.X, euler_angles.Y, euler_angles.Z);
+    }
 
+    static std::vector<double> create_rotation_matrix(const double& euler_x, const double& euler_y, const double& euler_z) noexcept
+    {
+        const double sx = std::sin(euler_x);
+        const double cx = std::cos(euler_x);
+        const double sy = std::sin(euler_y);
+        const double cy = std::cos(euler_y);
+        const double sz = std::sin(euler_z);
+        const double cz = std::cos(euler_z);
+
+        return std::vector<double>
+        {
+            cy * cz, sx * sy * cz - cx * sz, cx * sy * cz + sx * sz,
+            cx * sz, sx * sy * sz + cx * cz, cx * sy * sz - sy * cz,
+            sy,      sx * cy,                cx * cy
+        };
+    }
+
+    OSTREAM_OPERATOR(Vec3);
 
     // why? because c++ is fucking retarded, that's why!
     inline Vec3& operator =(const Vec3& value)
@@ -230,6 +270,8 @@ const Vec3 Vec3::Zero(0),
            Vec3::UnitY(0, 1, 0),
            Vec3::UnitZ(0, 0, 1);
 
+#define OPTIONAL_EULER const Vec3& euler_angles = Vec3(0, 0, 0)
+
 struct Ray
 {
     const Vec3 Origin;
@@ -258,6 +300,45 @@ struct Ray
         return Ray(evaluate(at), next_dir, IterationDepth + 1);
     }
 
+    bool MöllerTrumboreIntersect(
+        const Vec3& A, const Vec3& B, const Vec3& C,
+        double* const __restrict t, double* const __restrict u, double* const __restrict v,
+        bool* const __restrict hit_backface
+    ) const noexcept
+    {
+        if (!t || !u || !v)
+            return false;
+
+        const Vec3 edgeAB = B - A;
+        const Vec3 edgeAC = C - A;
+        const Vec3 pvec = Direction.cross(edgeAC);
+        const double det = edgeAB.dot(pvec);
+
+        if (fabs(det) < EPSILON)
+            return false;
+        else if (hit_backface)
+            *hit_backface = det < 0;
+
+        const double inv_det = 1 / det;
+        const Vec3 tvec = Origin - A;
+
+        *u = tvec.dot(pvec) * inv_det;
+
+        if (*u < 0 || *u > 1)
+            return false;
+
+        const Vec3 qvec = tvec.cross(edgeAB);
+
+        *v = Direction.dot(qvec) * inv_det;
+
+        if (*v < 0 || *u + *v > 1)
+            return false;
+
+        *t = edgeAC.dot(qvec) * inv_det;
+
+        return true;
+    }
+
     std::string to_string() const noexcept
     {
         std::stringstream ss;
@@ -267,7 +348,7 @@ struct Ray
     }
 
     // why? because c++ is fucking retarded, that's why!
-    inline Ray& operator =(const Ray& value)
+    inline Ray& operator=(const Ray& value)
     {
         return this == &value ? *this : *new(this)Ray(value);
     }
@@ -275,12 +356,23 @@ struct Ray
     OSTREAM_OPERATOR(Ray);
 };
 
-typedef struct
+struct RayTraceIteration
 {
     Ray Ray;
     double Distance;
     ARGB ComputedColor;
     Vec3 SurfaceNormal;
-} RayTraceIteration;
+
+
+    std::string to_string() const
+    {
+        std::stringstream ss;
+        ss << "[R=" << Ray << ", D=" << Distance << ", N=" << SurfaceNormal << ", C=" << ComputedColor << "]";
+
+        return ss.str();
+    }
+
+    OSTREAM_OPERATOR(RayTraceIteration);
+};
 
 typedef std::vector<RayTraceIteration> RayTraceResult;
