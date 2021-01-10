@@ -90,7 +90,7 @@
   <ItemGroup>
     <ClInclude Include="ray.hpp" />
     <ClInclude Include="ray_tracer.hpp" />
-    <ClInclude Include="triangle.hpp" />
+    <ClInclude Include="scene.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ray_tracer.cpp" />

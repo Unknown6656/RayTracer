@@ -21,7 +21,7 @@
     <ClInclude Include="ray.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="triangle.hpp">
+    <ClInclude Include="scene.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
