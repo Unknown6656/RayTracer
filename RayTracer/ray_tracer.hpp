@@ -1,6 +1,6 @@
 ﻿#pragma once
 
-#include "triangle.hpp"
+#include "scene.hpp"
 
 
 enum RenderMode
@@ -30,11 +30,6 @@ struct RenderConfiguration
     size_t MaximumIterationCount;
     CameraConfiguration Camera;
     RenderMode RenderMode;
-};
-
-struct Scene
-{
-    std::vector<Triangle> Geometry;
 };
 
 
