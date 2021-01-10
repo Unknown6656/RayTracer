@@ -1,4 +1,4 @@
-﻿//#define HQ
+﻿#define SQ
 
 using System;
 using System.Diagnostics;
@@ -14,24 +14,30 @@ namespace Visualizer
     public partial class MainWindow
         : Form
     {
-#if HQ
+#if HQ // high quality
         public const int WIDTH = 1920;
         public const int HEIGHT = 1080;
         public const int MAX_ITER = 2048;
         public const int SAMPLES = 128;
         public const int SUBPIXELS = 4;
-#else
-        public const int WIDTH = 640 / 16;
-        public const int HEIGHT = 360 / 16;
+#elif MQ // medium quality
+        public const int WIDTH = 1280;
+        public const int HEIGHT = 720;
+        public const int MAX_ITER = 48;
+        public const int SAMPLES = 2;
+        public const int SUBPIXELS = 2;
+#else // low quality
+        public const int WIDTH = 640;
+        public const int HEIGHT = 360;
         public const int MAX_ITER = 8;
         public const int SAMPLES = 1;
         public const int SUBPIXELS = 1;
 #endif
-        public const RenderMode MODE = RenderMode.Colors;
-        public const double ZOOM = 1;
+        public static RenderMode MODE = RenderMode.RenderTime;
         public const double FOCAL_LENGTH = .3;
-        public static readonly Vec3 EYE = new(0, 0, 50);
-        public static readonly Vec3 TARGET = new(0, 0, 0);
+        public static double ZOOM = 1;
+        public static Vec3 EYE = new(0, 0, 50);
+        public static Vec3 TARGET = new(0, 0, 0);
 
 
         public MainWindow()
@@ -41,6 +47,19 @@ namespace Visualizer
             DoubleBuffered = true;
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.InterpolationMode = InterpolationMode.NearestNeighbor;
+        }
+
+        private void MainWindow_Load(object sender, EventArgs e)
+        {
+            trackBar1.Value = 0;
+            trackBar2.Value = 30;
+            trackBar3.Value = 40;
+            comboBox1.DataSource = Enum.GetValues(typeof(RenderMode));
+            comboBox1.SelectedItem = MODE;
+
+            trackBar1_Scroll(sender, e);
+            trackBar2_Scroll(sender, e);
+            trackBar3_Scroll(sender, e);
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -132,5 +151,28 @@ namespace Visualizer
                 }));
             });
         }
+
+        private void trackBar1_Scroll(object sender, EventArgs e)
+        {
+            double angle = trackBar1.Value * 2 * Math.PI / trackBar1.Maximum;
+
+            EYE.Z = Math.Cos(angle) * 50;
+            EYE.X = Math.Sin(angle) * 50;
+            label1.Text = $"Hor.Rot.\n{angle*57.2957795131:F1}°";
+        }
+
+        private void trackBar2_Scroll(object sender, EventArgs e)
+        {
+            EYE.Y = trackBar2.Value;
+            label2.Text = $"Hor.Rot.\nY={EYE.Y:F2}m";
+        }
+
+        private void trackBar3_Scroll(object sender, EventArgs e)
+        {
+            ZOOM = trackBar3.Value / 20d;
+            label3.Text = $"Zoom\n{ZOOM:F2}x";
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e) => Enum.TryParse(comboBox1.SelectedValue.ToString(), out MODE);
     }
 }
