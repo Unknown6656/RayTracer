@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include "ray.hpp"
 #include "scene.hpp"
 
 
@@ -33,6 +34,8 @@ struct RenderConfiguration
 };
 
 
-extern "C" __declspec(dllexport) void __cdecl RenderImage(RenderConfiguration const, ARGB* const);
+extern "C" __declspec(dllexport) void __cdecl CreateScene(Scene* const);
+extern "C" __declspec(dllexport) void __cdecl RenderImage(const Scene* const, RenderConfiguration const, ARGB* const, double* const = nullptr);
+extern "C" __declspec(dllexport) void __cdecl ComputeRenderPass(const Scene* const, const RenderConfiguration&, const int, const int, ARGB* const&);
 extern "C" __declspec(dllexport) Ray __cdecl CreateRay(const CameraConfiguration&, const double, const double, const double, const double);
-extern "C" __declspec(dllexport) RayTraceIteration __cdecl TraceRay(const RenderConfiguration&, const Scene&, RayTraceResult* const, const Ray&);
+extern "C" __declspec(dllexport) RayTraceIteration __cdecl TraceRay(const Scene* const, const RenderConfiguration&, RayTraceResult* const, const Ray&);

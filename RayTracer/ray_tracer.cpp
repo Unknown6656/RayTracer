@@ -12,7 +12,79 @@
 #define DOUBLE_RAND (double(std::rand()) / RAND_MAX)
 
 
-void RenderPass(const RenderConfiguration& config, const int raw_x, const int raw_y, const Scene& scene, ARGB* const& buffer)
+void CreateScene(Scene* const scene)
+{
+    if (scene)
+    {
+        *scene = Scene();
+        scene->add_cube(Vec3(0, 1, 0), 2);
+        scene->add_planeXY(Vec3(0, 10, -20), 20);
+        scene->add_planeXY(Vec3::Zero, 20, Vec3(ROT_90, 0, 0));
+
+        // TODO
+    }
+}
+
+void RenderImage(const Scene* const scene, RenderConfiguration const config, ARGB* const buffer, double* const progress)
+{
+    assert(buffer != nullptr);
+
+    std::cout << "sizeof(Scene) = " << sizeof(Scene) << std::endl;
+
+    INIT_RAND;
+
+    const int w = config.HorizontalResolution;
+    const int h = config.VerticalResolution;
+    const int sub = config.SubpixelsPerPixel;
+    const size_t total_samples = double(w) * h * sub * sub * config.SamplesPerSubpixel;
+
+    std::cout << std::endl << "----------------------------------------------------------------" << std::endl
+        << "Resolution(in pixels) : " << w << "x" << h << std::endl
+        << "  Subpixels per pixel : " << sub << "x" << sub << std::endl
+        << " Samples per subpixel : " << config.SamplesPerSubpixel << std::endl
+        << "    Maximum ray depth : " << config.MaximumIterationCount << std::endl
+        << "    Minimum ray count : " << total_samples << std::endl
+        << "    Maximum ray count : " << total_samples * config.MaximumIterationCount << std::endl
+        << "       Triangle count : " << scene->Mesh.size() << std::endl
+        << "----------------------------------------------------------------" << std::endl;
+
+    auto total_timer = std::chrono::high_resolution_clock::now();
+    constexpr int CUBE_SZ = 128;
+    std::atomic<size_t> pass_counter(size_t(0));
+
+    if (progress)
+        *progress = 0;
+
+    for (int sample = 0; sample < config.SamplesPerSubpixel; ++sample)
+        for (int base_y = 0; base_y < h; base_y += CUBE_SZ)
+            for (int base_x = 0; base_x < w; base_x += CUBE_SZ)
+            {
+                const int block_w = std::min(w - base_x, CUBE_SZ);
+                const int block_h = std::min(h - base_y, CUBE_SZ);
+
+                concurrency::parallel_for(
+                    size_t(0),
+                    size_t(block_w) * size_t(block_h),
+                    [&](size_t index)
+                    {
+                        const int pixel_x = base_x + index % block_w;
+                        const int pixel_y = base_y + index / block_w;
+
+                        ComputeRenderPass(scene, config, pixel_x, pixel_y, buffer);
+
+                        if (progress)
+                            *progress = double(++pass_counter) / (double(w) * h * config.SamplesPerSubpixel);
+                    }
+                );
+            }
+
+    const auto elapsed = std::chrono::high_resolution_clock::now() - total_timer;
+    const double µs = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+
+    printf("Render time: %fs\n", µs * 1e-6);
+}
+
+void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& config, const int raw_x, const int raw_y, ARGB* const& buffer)
 {
     const int w = config.HorizontalResolution;
     const int h = config.VerticalResolution;
@@ -32,10 +104,9 @@ void RenderPass(const RenderConfiguration& config, const int raw_x, const int ra
             double y = double((sy + 0.5) / subd) / w + pixel_y;
             auto start = std::chrono::high_resolution_clock::now();
 
-            const Ray ray = CreateRay(config.Camera, w, h, x, y);
             RayTraceResult result;
-
-            TraceRay(config, scene, &result, ray);
+            const Ray ray = CreateRay(config.Camera, w, h, x, y);
+            const RayTraceIteration iteration = TraceRay(scene, config, &result, ray);
 
             const std::chrono::nanoseconds elapsed = std::chrono::high_resolution_clock::now() - start;
             ARGB color(0);
@@ -43,7 +114,7 @@ void RenderPass(const RenderConfiguration& config, const int raw_x, const int ra
             switch (config.RenderMode)
             {
                 case RenderMode::SurfaceNormals:
-                    color = result[0].SurfaceNormal;
+                    color = iteration.SurfaceNormal.add(Vec3(1)).scale(.5);
 
                     break;
                 case RenderMode::RayDirection:
@@ -61,12 +132,12 @@ void RenderPass(const RenderConfiguration& config, const int raw_x, const int ra
                     color = ARGB(std::log10(µs) * 0.30293575075);
                 } break;
                 case RenderMode::Depths:
-                    // TODO 
+                    color = ARGB(1.0 / (1 + 0.1 * iteration.Distance));
 
                     break;
                 case RenderMode::Colors:
                 default:
-                    color = result[0].ComputedColor;
+                    color = iteration.ComputedColor;
 
                     break;
             }
@@ -75,66 +146,9 @@ void RenderPass(const RenderConfiguration& config, const int raw_x, const int ra
         }
     }
 
-    const size_t index(raw_x + raw_y * w);
+    const size_t index = raw_x + size_t(raw_y * w);
 
     buffer[index] = buffer[index] + total / double(config.SamplesPerSubpixel);
-}
-
-void RenderImage(RenderConfiguration const config, ARGB* const buffer)
-{
-    assert(buffer != nullptr);
-
-    INIT_RAND;
-
-    const int w = config.HorizontalResolution;
-    const int h = config.VerticalResolution;
-    const int sub = config.SubpixelsPerPixel;
-    const size_t total_samples = double(w) * h * sub * sub * config.SamplesPerSubpixel;
-
-
-
-    Scene scene;
-    scene.add_cube(Vec3::Zero, 20);
-
-
-
-    std::cout << std::endl << "----------------------------------------------------------------" << std::endl
-        << "Resolution(in pixels) : " << w << "x" << h << std::endl
-        << "  Subpixels per pixel : " << sub << "x" << sub << std::endl
-        << " Samples per subpixel : " << config.SamplesPerSubpixel << std::endl
-        << "    Maximum ray depth : " << config.MaximumIterationCount << std::endl
-        << "    Minimum ray count : " << total_samples << std::endl
-        << "    Maximum ray count : " << total_samples * config.MaximumIterationCount << std::endl
-        << "       Triangle count : " << scene.Mesh.size() << std::endl
-        << "----------------------------------------------------------------" << std::endl;
-
-    auto total_timer = std::chrono::high_resolution_clock::now();
-    constexpr int CUBE_SZ = 128;
-
-    for (int sample = 0; sample < config.SamplesPerSubpixel; ++sample)
-        for (int base_y = 0; base_y < h; base_y += CUBE_SZ)
-            for (int base_x = 0; base_x < w; base_x += CUBE_SZ)
-            {
-                const int block_w = std::min(w - base_x, CUBE_SZ);
-                const int block_h = std::min(h - base_y, CUBE_SZ);
-
-                concurrency::parallel_for(
-                    size_t(0),
-                    size_t(block_w) * size_t(block_h),
-                    [&](size_t index)
-                    {
-                        const int pixel_x = base_x + index % block_w;
-                        const int pixel_y = base_y + index / block_w;
-
-                        RenderPass(config, pixel_x, pixel_y, scene, buffer);
-                    }
-                );
-            }
-
-    const auto elapsed = std::chrono::high_resolution_clock::now() - total_timer;
-    const double µs = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
-
-    printf("Render time: %fs\n", µs * 1e-6);
 }
 
 Ray CreateRay(const CameraConfiguration& camera, const double w, const double h, const double x, const double y)
@@ -155,25 +169,31 @@ Ray CreateRay(const CameraConfiguration& camera, const double w, const double h,
     return r;
 }
 
-RayTraceIteration TraceRay(const RenderConfiguration& config, const Scene& scene, RayTraceResult* const result, const Ray& ray)
+RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& config, RayTraceResult* const result, const Ray& ray)
 {
     if (ray.IterationDepth < config.MaximumIterationCount)
     {
         int iter_index = result->size();
         RayTraceIteration iteration;
         bool intersection = false;
-        double distance = 0.0;
+        double distance = INFINITY;
         bool inside = false;
 
         result->push_back(iteration);
 
-        for (const Triangle& triangle : scene.Mesh)
-            if (intersection |= triangle.intersect(ray, &distance, &inside))
-            {
-                iteration.SurfaceNormal = triangle.normal_at(ray.evaluate(distance));
+        for (const Triangle& triangle : scene->Mesh)
+        {
+            double dist =  INFINITY;
+            bool ins = false;
 
-                break;
+            if (triangle.intersect(ray, &dist, &ins) && dist < distance)
+            {
+                iteration.SurfaceNormal = triangle.normal_at(ray.evaluate(dist));
+                intersection = true;
+                distance = dist;
+                inside = ins;
             }
+        }
 
         iteration.Distance = distance;
         iteration.Ray = ray;
@@ -186,7 +206,7 @@ RayTraceIteration TraceRay(const RenderConfiguration& config, const Scene& scene
 
 
 
-            RayTraceIteration i1 = TraceRay(config, scene, result, ray.create_next(distance, direction));
+            RayTraceIteration i1 = TraceRay(scene, config, result, ray.create_next(distance, direction));
 
 
             // TODO
