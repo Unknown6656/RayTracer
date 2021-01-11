@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+
 
 namespace Visualizer
 {
@@ -18,42 +18,46 @@ namespace Visualizer
         public const int WIDTH = 1920;
         public const int HEIGHT = 1080;
         public const int MAX_ITER = 2048;
-        public const int SAMPLES = 128;
         public const int SUBPIXELS = 4;
+        public static int SAMPLES = 128;
 #elif MQ // medium quality
         public const int WIDTH = 1280;
         public const int HEIGHT = 720;
         public const int MAX_ITER = 48;
-        public const int SAMPLES = 2;
         public const int SUBPIXELS = 2;
+        public static int SAMPLES = 2;
 #else // low quality
         public const int WIDTH = 640;
         public const int HEIGHT = 360;
         public const int MAX_ITER = 8;
-        public const int SAMPLES = 1;
         public const int SUBPIXELS = 1;
+        public static int SAMPLES = 2;
 #endif
         public static RenderMode MODE = RenderMode.RenderTime;
         public const double FOCAL_LENGTH = .3;
         public static double ZOOM = 1;
-        public static Vec3 EYE = new(0, 0, 50);
+        public static Vec3 EYE = new(0, 0, 10);
         public static Vec3 TARGET = new(0, 0, 0);
+        public static Scene SCENE;
 
 
-        public MainWindow()
+        public unsafe MainWindow()
         {
             InitializeComponent();
 
             DoubleBuffered = true;
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.InterpolationMode = InterpolationMode.NearestNeighbor;
+
+            RayTracer.CreateScene(out SCENE);
         }
 
         private void MainWindow_Load(object sender, EventArgs e)
         {
-            trackBar1.Value = 0;
-            trackBar2.Value = 30;
-            trackBar3.Value = 40;
+            trackBar1.Value = 32;
+            trackBar2.Value = 5;
+            trackBar3.Value = 60;
+            numericUpDown1.Value = SAMPLES;
             comboBox1.DataSource = Enum.GetValues(typeof(RenderMode));
             comboBox1.SelectedItem = MODE;
 
@@ -65,6 +69,7 @@ namespace Visualizer
         private async void button1_Click(object sender, EventArgs e)
         {
             button1.Enabled = false;
+            progressBar1.Value = 0;
 
             await Task.Factory.StartNew(delegate
             {
@@ -81,10 +86,11 @@ namespace Visualizer
                     HorizontalResolution = WIDTH,
                     VerticalResolution = HEIGHT,
                     MaximumIterationCount = MAX_ITER,
-                    SamplesPerSubpixel = SAMPLES,
+                    SamplesPerSubpixel = (ulong)SAMPLES,
                     SubpixelsPerPixel = SUBPIXELS,
                 };
                 var buffer = new (double A, double R, double G, double B)[config.HorizontalResolution * config.VerticalResolution];
+                double progress = 0;
                 unsafe void update_image()
                 {
                     Bitmap bmp = new Bitmap(WIDTH, HEIGHT, PixelFormat.Format32bppArgb);
@@ -113,6 +119,8 @@ namespace Visualizer
                     {
                         using Image? old = pictureBox1.Image;
 
+                        button1.Text = $"{progress * 100:F4} %";
+                        progressBar1.Value = (int)(progress * progressBar1.Maximum);
                         pictureBox1.Image = bmp;
                         old?.Dispose();
                     }));
@@ -135,7 +143,7 @@ namespace Visualizer
                 unsafe
                 {
                     fixed ((double, double, double, double)* iptr = buffer)
-                        RayTracer.RenderImage(config, iptr);
+                        RayTracer.RenderImage(ref SCENE, config, iptr, ref progress);
                 }
 
                 finished = true;
@@ -146,6 +154,7 @@ namespace Visualizer
                 Invoke(new MethodInvoker(delegate
                 {
                     button1.Enabled = true;
+                    progressBar1.Value = progressBar1.Maximum;
                     button1.Text = $"(RE)RENDER                    previous: {sw.ElapsedMilliseconds:F4}ms";
                     pictureBox1.Image?.Save("./render.png", ImageFormat.Png);
                 }));
@@ -156,8 +165,8 @@ namespace Visualizer
         {
             double angle = trackBar1.Value * 2 * Math.PI / trackBar1.Maximum;
 
-            EYE.Z = Math.Cos(angle) * 50;
-            EYE.X = Math.Sin(angle) * 50;
+            EYE.Z = Math.Cos(angle) * 10;
+            EYE.X = Math.Sin(angle) * 10;
             label1.Text = $"Hor.Rot.\n{angle*57.2957795131:F1}°";
         }
 
@@ -174,5 +183,7 @@ namespace Visualizer
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e) => Enum.TryParse(comboBox1.SelectedValue.ToString(), out MODE);
+
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e) => SAMPLES = (int)numericUpDown1.Value;
     }
 }
