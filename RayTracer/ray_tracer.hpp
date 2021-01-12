@@ -1,14 +1,16 @@
 ﻿#pragma once
 
-#include "ray.hpp"
 #include "scene.hpp"
 
 
 enum RenderMode
 {
     Colors,
+    Wireframe,
+    UVCoords,
     Depths,
     SurfaceNormals,
+    RayIncidenceAngle,
     RayDirection,
     Iterations,
     RenderTime,

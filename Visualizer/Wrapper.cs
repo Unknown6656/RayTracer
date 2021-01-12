@@ -1,14 +1,17 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
+
 
 namespace Visualizer
 {
     public enum RenderMode
     {
         Colors,
+        Wireframe,
+        UVCoords,
         Depths,
         SurfaceNormals,
+        RayIncidenceAngle,
         RayDirection,
         Iterations,
         RenderTime,

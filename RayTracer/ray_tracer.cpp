@@ -17,9 +17,18 @@ void CreateScene(Scene* const scene)
     if (scene)
     {
         *scene = Scene();
-        scene->add_cube(Vec3(0, 1, 0), 2);
-        scene->add_planeXY(Vec3(0, 10, -20), 20);
-        scene->add_planeXY(Vec3::Zero, 20, Vec3(ROT_90, 0, 0));
+
+        MeshReference cube = scene->add_cube(Vec3(-4, 3, 4), 2);
+        MeshReference back = scene->add_planeXY(Vec3(0, 10, -10), 20);
+        MeshReference left = scene->add_planeXY(Vec3(-10, 10, 0), 20, Vec3(0, ROT_90, 0));
+        MeshReference floor = scene->add_planeXY(Vec3::Zero, 20, Vec3(ROT_90, 0, 0));
+        MeshReference ball = scene->add_sphere(Vec3(0, 2, 0), 1.7);
+
+        cube.set_material(Material::diffuse(ARGB::RED));
+        back.set_material(Material::diffuse(ARGB::BLUE));
+        left.set_material(Material::emissive(ARGB::GREEN, 0.2));
+        floor.set_material(Material::reflective(ARGB::BLACK, 1));
+        ball.set_material(Material::reflective(ARGB(.5, .7, .84), .8));
 
         // TODO
     }
@@ -45,7 +54,8 @@ void RenderImage(const Scene* const scene, RenderConfiguration const config, ARG
         << "    Maximum ray depth : " << config.MaximumIterationCount << std::endl
         << "    Minimum ray count : " << total_samples << std::endl
         << "    Maximum ray count : " << total_samples * config.MaximumIterationCount << std::endl
-        << "       Triangle count : " << scene->Mesh.size() << std::endl
+        << "       Triangle count : " << scene->mesh.size() << std::endl
+        << "          Render mode : " << config.RenderMode << std::endl
         << "----------------------------------------------------------------" << std::endl;
 
     auto total_timer = std::chrono::high_resolution_clock::now();
@@ -113,12 +123,50 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
 
             switch (config.RenderMode)
             {
+                case RenderMode::Colors:
+                default_mode:
+                    color = iteration.ComputedColor;
+
+                    break;
+                case RenderMode::Depths:
+                    if (iteration.Hit)
+                        color = ARGB(1.0 / (1 + 0.1 * iteration.Distance));
+
+                    break;
+                case RenderMode::Wireframe:
+                    if (iteration.Hit)
+                    {
+                        const double u = std::get<0>(iteration.UVCoordinates);
+                        const double v = std::get<1>(iteration.UVCoordinates);
+                        const double w = 1 - u - v;
+                        const int h = std::min(w, std::min(u, v)) <= .01;
+
+                        color = ARGB(h * u, h * v, h * w);
+                    }
+
+                    break;
+                case RenderMode::UVCoords:
+                    if (iteration.Hit)
+                    {
+                        const double u = std::get<0>(iteration.UVCoordinates);
+                        const double v = std::get<1>(iteration.UVCoordinates);
+
+                        color = ARGB(u, v, 1 - u - v);
+                    }
+
+                    break;
                 case RenderMode::SurfaceNormals:
-                    color = iteration.SurfaceNormal.add(Vec3(1)).scale(.5);
+                    if (iteration.Hit)
+                        color = iteration.SurfaceNormal.add(Vec3(1)).scale(.5);
 
                     break;
                 case RenderMode::RayDirection:
                     color = ray.Direction.add(Vec3(1)).scale(.5);
+
+                    break;
+                case RenderMode::RayIncidenceAngle:
+                    if (iteration.Hit)
+                        color = ARGB(1 - std::abs(ray.Direction.angle_to(iteration.SurfaceNormal) / ROT_90));
 
                     break;
                 case RenderMode::Iterations:
@@ -131,15 +179,8 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
 
                     color = ARGB(std::log10(µs) * 0.30293575075);
                 } break;
-                case RenderMode::Depths:
-                    color = ARGB(1.0 / (1 + 0.1 * iteration.Distance));
-
-                    break;
-                case RenderMode::Colors:
                 default:
-                    color = iteration.ComputedColor;
-
-                    break;
+                    goto default_mode;
             }
 
             total = total + color * norm_factor;
@@ -175,30 +216,34 @@ RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& 
     {
         int iter_index = result->size();
         RayTraceIteration iteration;
-        bool intersection = false;
+        bool hit = false;
         double distance = INFINITY;
         bool inside = false;
 
         result->push_back(iteration);
 
-        for (const Triangle& triangle : scene->Mesh)
+        for (const Triangle& triangle : scene->mesh)
         {
-            double dist =  INFINITY;
+            std::tuple<double, double> uv;
+            double dist = INFINITY;
             bool ins = false;
 
-            if (triangle.intersect(ray, &dist, &ins) && dist < distance)
+            if (triangle.intersect(ray, &dist, &ins, &uv) && dist < distance)
             {
-                iteration.SurfaceNormal = triangle.normal_at(ray.evaluate(dist));
-                intersection = true;
+                iteration.IntersectionPoint = ray.evaluate(dist);
+                iteration.SurfaceNormal = triangle.normal_at(iteration.IntersectionPoint);
+                iteration.UVCoordinates = uv;
+                hit = true;
                 distance = dist;
                 inside = ins;
             }
         }
 
-        iteration.Distance = distance;
         iteration.Ray = ray;
+        iteration.Hit = hit;
+        iteration.Distance = distance;
 
-        if (!intersection)
+        if (!hit)
             iteration.ComputedColor = ARGB(0, 0); // TODO : handle environment colors?
         else
         {
@@ -213,7 +258,7 @@ RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& 
             iteration.ComputedColor = ARGB(1.0 / (1 + ray.IterationDepth));
         }
 
-        iteration.ComputedColor = ARGB(intersection);
+        iteration.ComputedColor = ARGB(hit);
         result->at(iter_index) = iteration;
 
         return iteration;
