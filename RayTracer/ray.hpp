@@ -2,19 +2,13 @@
 
 #include "vec3.hpp"
 
-#define EULER_ARG const Vec3& euler_angles
-#define EULER_OPTARG EULER_ARG = Vec3(0, 0, 0)
-#define ROT_90 1.5707963267949
-#define ROT_180 3.14159265358979
-#define ROT_270 4.71238898038469
-
 
 struct Ray
 {
     const Vec3 Origin;
     const Vec3 Direction;
     const size_t IterationDepth;
-
+     
 
     Ray() noexcept : Ray(Vec3(), Vec3(), 0) { }
 
@@ -51,7 +45,7 @@ struct Ray
         const Vec3 pvec = Direction.cross(edgeAC);
         const double det = edgeAB.dot(pvec);
 
-        if (fabs(det) < EPSILON)
+        if (std::abs(det) < EPSILON)
             return false;
         else if (hit_backface)
             *hit_backface = det < 0;
@@ -96,9 +90,12 @@ struct Ray
 struct RayTraceIteration
 {
     Ray Ray;
+    bool Hit;
     double Distance;
     ARGB ComputedColor;
     Vec3 SurfaceNormal;
+    Vec3 IntersectionPoint;
+    std::tuple<double, double> UVCoordinates;
 
 
     std::string to_string() const
