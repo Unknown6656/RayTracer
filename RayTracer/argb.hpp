@@ -1,15 +1,12 @@
 #pragma once
 
-#include <cmath>
-#include <sstream>
-#include <string>
-#include <ostream>
-
-#define OSTREAM_OPERATOR(x) friend inline std::ostream& operator<<(std::ostream& os, const x& value) { os << value.to_string(); return os; }
+#include "common.hpp"
 
 
 struct ARGB
 {
+    static const ARGB BLACK, WHITE, TRANSPARENT, RED, GREEN, BLUE;
+
     double A, R, G, B;
 
 
@@ -64,13 +61,48 @@ struct ARGB
 
 struct Material
 {
-    double Opacity;
     ARGB DiffuseColor;
     ARGB SpecularColor;
     ARGB EmissiveColor;
+    double EmissiveIntensity;
     double Specularity;
     double SpecularIndex;
     double Reflectiveness;
     double Refractiveness;
     ARGB RefractiveIndex;
+
+
+    inline double opacity() const noexcept
+    {
+        return DiffuseColor.A;
+    }
+
+    static inline const Material& diffuse(const ARGB& color) noexcept
+    {
+        Material mat;
+        mat.DiffuseColor = color;
+        mat.SpecularColor = ARGB::TRANSPARENT;
+        mat.EmissiveColor = ARGB::TRANSPARENT;
+
+        return mat;
+    }
+
+    static inline const Material& reflective(const ARGB& base, const double reflectiveness) noexcept
+    {
+        Material mat;
+        mat.DiffuseColor = base;
+        mat.Reflectiveness = reflectiveness;
+
+        return mat;
+    }
+
+    static inline const Material& emissive(const ARGB& base, const double intensity) noexcept
+    {
+        Material mat;
+        mat.DiffuseColor = base;
+        mat.EmissiveColor = base;
+        mat.EmissiveIntensity = intensity;
+
+        return mat;
+    }
 };
