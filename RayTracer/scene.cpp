@@ -1,5 +1,4 @@
 #include "scene.hpp"
-#include <algorithm>
 
 
 MeshReference::MeshReference(Scene* scene, std::vector<int> indices) noexcept
@@ -19,11 +18,6 @@ MeshReference::MeshReference(Scene* scene, const std::vector<MeshReference>& ref
                 _indices.push_back(index);
 }
 
-inline int MeshReference::triangle_count() const noexcept
-{
-    return _indices.size();
-}
-
 inline std::vector<Triangle> MeshReference::mesh() const
 {
     std::vector<Triangle> triangles;
@@ -33,11 +27,4 @@ inline std::vector<Triangle> MeshReference::mesh() const
 
     return triangles;
 }
-
-inline void MeshReference::set_material(Material mat)
-{
-    for (const int index : _indices)
-        _scene->Mesh[index].set_material(mat);
-}
-
 
