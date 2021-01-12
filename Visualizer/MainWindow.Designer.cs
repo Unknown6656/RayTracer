@@ -42,19 +42,22 @@ namespace Visualizer
             this.label1 = new System.Windows.Forms.Label();
             this.trackBar2 = new System.Windows.Forms.TrackBar();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.label5 = new System.Windows.Forms.Label();
+            this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
             this.SuspendLayout();
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(670, 41);
+            this.button1.Location = new System.Drawing.Point(424, 41);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(345, 41);
+            this.button1.Size = new System.Drawing.Size(464, 41);
             this.button1.TabIndex = 0;
             this.button1.Text = "(RE)RENDER";
             this.button1.UseVisualStyleBackColor = true;
@@ -74,6 +77,8 @@ namespace Visualizer
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.label5);
+            this.groupBox1.Controls.Add(this.numericUpDown2);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.numericUpDown1);
             this.groupBox1.Controls.Add(this.progressBar1);
@@ -96,22 +101,22 @@ namespace Visualizer
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(888, 16);
+            this.label4.Location = new System.Drawing.Point(761, 16);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(54, 15);
+            this.label4.Size = new System.Drawing.Size(66, 15);
             this.label4.TabIndex = 10;
-            this.label4.Text = "Samples:";
+            this.label4.Text = "Rays p. Px.:";
             // 
             // numericUpDown1
             // 
-            this.numericUpDown1.Location = new System.Drawing.Point(948, 14);
+            this.numericUpDown1.Location = new System.Drawing.Point(833, 14);
             this.numericUpDown1.Minimum = new decimal(new int[] {
             1,
             0,
             0,
             0});
             this.numericUpDown1.Name = "numericUpDown1";
-            this.numericUpDown1.Size = new System.Drawing.Size(67, 23);
+            this.numericUpDown1.Size = new System.Drawing.Size(55, 23);
             this.numericUpDown1.TabIndex = 9;
             this.numericUpDown1.Value = new decimal(new int[] {
             1,
@@ -122,19 +127,19 @@ namespace Visualizer
             // 
             // progressBar1
             // 
-            this.progressBar1.Location = new System.Drawing.Point(670, 88);
+            this.progressBar1.Location = new System.Drawing.Point(424, 88);
             this.progressBar1.MarqueeAnimationSpeed = 0;
             this.progressBar1.Maximum = 1000;
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(345, 26);
+            this.progressBar1.Size = new System.Drawing.Size(464, 26);
             this.progressBar1.TabIndex = 8;
             // 
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Location = new System.Drawing.Point(670, 14);
+            this.comboBox1.Location = new System.Drawing.Point(424, 12);
             this.comboBox1.Name = "comboBox1";
-            this.comboBox1.Size = new System.Drawing.Size(192, 23);
+            this.comboBox1.Size = new System.Drawing.Size(174, 23);
             this.comboBox1.TabIndex = 7;
             this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
             // 
@@ -153,7 +158,7 @@ namespace Visualizer
             this.trackBar3.Maximum = 150;
             this.trackBar3.Minimum = 1;
             this.trackBar3.Name = "trackBar3";
-            this.trackBar3.Size = new System.Drawing.Size(376, 45);
+            this.trackBar3.Size = new System.Drawing.Size(130, 45);
             this.trackBar3.TabIndex = 5;
             this.trackBar3.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
             this.trackBar3.Value = 20;
@@ -193,10 +198,42 @@ namespace Visualizer
             this.trackBar1.Location = new System.Drawing.Point(66, 22);
             this.trackBar1.Maximum = 360;
             this.trackBar1.Name = "trackBar1";
-            this.trackBar1.Size = new System.Drawing.Size(598, 45);
+            this.trackBar1.Size = new System.Drawing.Size(352, 45);
             this.trackBar1.TabIndex = 1;
             this.trackBar1.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
             this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(617, 16);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(68, 15);
+            this.label5.TabIndex = 12;
+            this.label5.Text = "√Subpixels:";
+            // 
+            // numericUpDown2
+            // 
+            this.numericUpDown2.Location = new System.Drawing.Point(691, 12);
+            this.numericUpDown2.Maximum = new decimal(new int[] {
+            4,
+            0,
+            0,
+            0});
+            this.numericUpDown2.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDown2.Name = "numericUpDown2";
+            this.numericUpDown2.Size = new System.Drawing.Size(55, 23);
+            this.numericUpDown2.TabIndex = 11;
+            this.numericUpDown2.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
+            this.numericUpDown2.ValueChanged += new System.EventHandler(this.numericUpDown2_ValueChanged);
             // 
             // MainWindow
             // 
@@ -215,6 +252,7 @@ namespace Visualizer
             ((System.ComponentModel.ISupportInitialize)(this.trackBar3)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar2)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
             this.ResumeLayout(false);
 
         }
@@ -234,6 +272,8 @@ namespace Visualizer
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.NumericUpDown numericUpDown1;
+        private System.Windows.Forms.Label label5;
+        private System.Windows.Forms.NumericUpDown numericUpDown2;
     }
 }
 

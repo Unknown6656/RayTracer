@@ -18,26 +18,27 @@ namespace Visualizer
         public const int WIDTH = 1920;
         public const int HEIGHT = 1080;
         public const int MAX_ITER = 2048;
-        public const int SUBPIXELS = 4;
+        public static int SUBPIXELS = 4;
         public static int SAMPLES = 128;
 #elif MQ // medium quality
         public const int WIDTH = 1280;
         public const int HEIGHT = 720;
         public const int MAX_ITER = 48;
-        public const int SUBPIXELS = 2;
+        public static int SUBPIXELS = 2;
         public static int SAMPLES = 2;
 #else // low quality
-        public const int WIDTH = 640;
-        public const int HEIGHT = 360;
+        public const int WIDTH = 720;
+        public const int HEIGHT = 405;
         public const int MAX_ITER = 8;
-        public const int SUBPIXELS = 1;
-        public static int SAMPLES = 2;
+        public static int SUBPIXELS = 1;
+        public static int SAMPLES = 1;
 #endif
-        public static RenderMode MODE = RenderMode.RenderTime;
-        public const double FOCAL_LENGTH = .3;
-        public static double ZOOM = 1;
-        public static Vec3 EYE = new(0, 0, 10);
-        public static Vec3 TARGET = new(0, 0, 0);
+        public static RenderMode MODE = RenderMode.Colors;
+        public const double FOCAL_LENGTH = 1;
+        public static double ZOOM = 2;
+        public static double EYE_DIST = 18;
+        public static Vec3 EYE = new(0, 0, EYE_DIST);
+        public static Vec3 TARGET = new(0, 3, 0);
         public static Scene SCENE;
 
 
@@ -54,10 +55,11 @@ namespace Visualizer
 
         private void MainWindow_Load(object sender, EventArgs e)
         {
-            trackBar1.Value = 32;
+            trackBar1.Value = 47;
             trackBar2.Value = 5;
-            trackBar3.Value = 60;
+            trackBar3.Value = (int)(ZOOM * 20);
             numericUpDown1.Value = SAMPLES;
+            numericUpDown2.Value = SUBPIXELS;
             comboBox1.DataSource = Enum.GetValues(typeof(RenderMode));
             comboBox1.SelectedItem = MODE;
 
@@ -87,7 +89,7 @@ namespace Visualizer
                     VerticalResolution = HEIGHT,
                     MaximumIterationCount = MAX_ITER,
                     SamplesPerSubpixel = (ulong)SAMPLES,
-                    SubpixelsPerPixel = SUBPIXELS,
+                    SubpixelsPerPixel = (ulong)SUBPIXELS,
                 };
                 var buffer = new (double A, double R, double G, double B)[config.HorizontalResolution * config.VerticalResolution];
                 double progress = 0;
@@ -165,8 +167,8 @@ namespace Visualizer
         {
             double angle = trackBar1.Value * 2 * Math.PI / trackBar1.Maximum;
 
-            EYE.Z = Math.Cos(angle) * 10;
-            EYE.X = Math.Sin(angle) * 10;
+            EYE.Z = Math.Cos(angle) * EYE_DIST;
+            EYE.X = Math.Sin(angle) * EYE_DIST;
             label1.Text = $"Hor.Rot.\n{angle*57.2957795131:F1}°";
         }
 
@@ -185,5 +187,7 @@ namespace Visualizer
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e) => Enum.TryParse(comboBox1.SelectedValue.ToString(), out MODE);
 
         private void numericUpDown1_ValueChanged(object sender, EventArgs e) => SAMPLES = (int)numericUpDown1.Value;
+
+        private void numericUpDown2_ValueChanged(object sender, EventArgs e) => SUBPIXELS = (int)numericUpDown2.Value;
     }
 }
