@@ -1,13 +1,14 @@
 #pragma once
 
-#include <cmath>
-#include <sstream>
-#include <string>
-#include <ostream>
-#include <vector>
+#include "argb.hpp"
 
-#define EPSILON 1e-6
-#define INFINITY 1e7
+#define EULER_ARG const Vec3& euler_angles
+#define EULER_OPTARG EULER_ARG = Vec3(0, 0, 0)
+#define ROT_45 0.78539816339000
+#define ROT_90 1.57079632679490
+#define ROT_135 2.35619449017000
+#define ROT_180 3.14159265358979
+#define ROT_270 4.71238898038469
 
 
 struct Vec3
@@ -101,6 +102,11 @@ struct Vec3
             matrix[3] * X + matrix[4] * Y + matrix[5] * Z,
             matrix[6] * X + matrix[7] * Y + matrix[8] * Z
         );
+    }
+
+    inline double angle_to(const Vec3& other) const noexcept
+    {
+        return std::acos(normalize().dot(other.normalize()));
     }
 
     inline Vec3 rotate(const double& euler_x, const double& euler_y, const double& euler_z) const noexcept
