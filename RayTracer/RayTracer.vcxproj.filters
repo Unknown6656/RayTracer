@@ -23,15 +23,21 @@
     <ClInclude Include="vec3.hpp">
       <Filter>headers</Filter>
     </ClInclude>
+    <ClInclude Include="argb.hpp">
+      <Filter>headers</Filter>
+    </ClInclude>
+    <ClInclude Include="common.hpp">
+      <Filter>headers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ray_tracer.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="scene.cpp">
+    <ClCompile Include="vec3.cpp">
       <Filter>source</Filter>
     </ClCompile>
-    <ClCompile Include="vec3.cpp">
+    <ClCompile Include="argb.cpp">
       <Filter>source</Filter>
     </ClCompile>
   </ItemGroup>

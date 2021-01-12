@@ -88,14 +88,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="argb.hpp" />
+    <ClInclude Include="common.hpp" />
     <ClInclude Include="ray.hpp" />
     <ClInclude Include="ray_tracer.hpp" />
     <ClInclude Include="scene.hpp" />
     <ClInclude Include="vec3.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="argb.cpp" />
     <ClCompile Include="ray_tracer.cpp" />
-    <ClCompile Include="scene.cpp" />
     <ClCompile Include="vec3.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
