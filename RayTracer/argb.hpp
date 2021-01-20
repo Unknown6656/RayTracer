@@ -23,7 +23,7 @@ struct ARGB
     {
     }
 
-    std::string to_string() const noexcept
+    inline std::string to_string() const noexcept
     {
         std::stringstream ss;
         ss << '[' << A << "," << R << "," << G << "," << B << ']';
@@ -53,9 +53,19 @@ struct ARGB
         return ARGB(A * factor, R * factor, G * factor, B * factor);
     }
 
+    inline ARGB operator*(const ARGB& other) const noexcept
+    {
+        return ARGB(A * other.A, R * other.R, G * other.G, B * other.B);
+    }
+
     inline ARGB operator/(const double factor) const
     {
         return ARGB(A / factor, R / factor, G / factor, B / factor);
+    }
+
+    inline ARGB& operator+=(const ARGB& other)
+    {
+        return ARGB(*this + other);
     }
 };
 

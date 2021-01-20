@@ -70,7 +70,7 @@ struct Ray
         return true;
     }
 
-    std::string to_string() const noexcept
+    inline std::string to_string() const noexcept
     {
         std::stringstream ss;
         ss << "[O=" << Origin << ", D=" << Direction << ", I=" << IterationDepth << ']';
@@ -78,14 +78,11 @@ struct Ray
         return ss.str();
     }
 
-    // why? because c++ is fucking retarded, that's why!
-    inline Ray& operator=(const Ray& value)
-    {
-        return this == &value ? *this : *new(this)Ray(value);
-    }
-
     OSTREAM_OPERATOR(Ray);
+    CPP_IS_FUCKING_RETARDED(Ray);
 };
+
+struct Triangle;
 
 struct RayTraceIteration
 {
@@ -96,9 +93,10 @@ struct RayTraceIteration
     Vec3 SurfaceNormal;
     Vec3 IntersectionPoint;
     std::tuple<double, double> UVCoordinates;
+    int TriangleIndex;
 
 
-    std::string to_string() const
+    inline std::string to_string() const noexcept
     {
         std::stringstream ss;
         ss << "[R=" << Ray << ", D=" << Distance << ", N=" << SurfaceNormal << ", C=" << ComputedColor << "]";
