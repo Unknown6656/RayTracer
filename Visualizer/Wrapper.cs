@@ -44,28 +44,15 @@ namespace Visualizer
         public RenderMode RenderMode;
     };
 
-    public unsafe struct Scene
-    {
-        public const int SIZE = 24;
-        public fixed byte RawBuffer[SIZE];
-
-        public override string ToString()
-        {
-            StringBuilder sb = new StringBuilder().Append("[ ");
-
-            for (int i = 0; i < SIZE; ++i)
-                sb.Append($"{RawBuffer[i]:x2} ");
-
-            return sb.Append(']').ToString();
-        }
-    }
-
     public static class RayTracer
     {
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern void CreateScene(out Scene scene);
+        public static unsafe extern void CreateScene(void** scene);
 
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern void RenderImage(ref Scene scene, RenderConfiguration config, (double A, double R, double G, double B)* buffer, ref double progress);
+        public static unsafe extern void DeleteScene(void** scene);
+
+        [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static unsafe extern void RenderImage(void* scene, RenderConfiguration config, (double A, double R, double G, double B)* buffer, ref double progress);
     }
 }
