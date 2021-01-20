@@ -4,11 +4,13 @@
 
 #define EULER_ARG const Vec3& euler_angles
 #define EULER_OPTARG EULER_ARG = Vec3(0, 0, 0)
-#define ROT_45 0.78539816339000
-#define ROT_90 1.57079632679490
-#define ROT_135 2.35619449017000
-#define ROT_180 3.14159265358979
-#define ROT_270 4.71238898038469
+#define RAD2DEG(x) ((x) * 57.2957795131)
+#define DEG2RAD(x) ((x) * 0.01745329251)
+#define ROT_45 DEG2RAD(45)
+#define ROT_90 DEG2RAD(90)
+#define ROT_135 DEG2RAD(135)
+#define ROT_180 DEG2RAD(180)
+#define ROT_270 DEG2RAD(270)
 
 
 struct Vec3
@@ -104,6 +106,11 @@ struct Vec3
         );
     }
 
+    inline double distance_to(const Vec3& other) const noexcept
+    {
+        return sub(other).length();
+    }
+
     inline double angle_to(const Vec3& other) const noexcept
     {
         return std::acos(normalize().dot(other.normalize()));
@@ -119,7 +126,7 @@ struct Vec3
         return rotate(euler_angles.X, euler_angles.Y, euler_angles.Z);
     }
 
-    std::string to_string() const noexcept
+    inline std::string to_string() const noexcept
     {
         std::stringstream ss;
         ss << '[' << X << "," << Y << "," << Z << ']';
@@ -150,12 +157,7 @@ struct Vec3
     }
 
     OSTREAM_OPERATOR(Vec3);
-
-    // why? because c++ is fucking retarded, that's why!
-    inline Vec3& operator =(const Vec3& value)
-    {
-        return this == &value ? *this : *new(this)Vec3(value);
-    }
+    CPP_IS_FUCKING_RETARDED(Vec3);
 
     inline Vec3 operator+() const noexcept
     {
