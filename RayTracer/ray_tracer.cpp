@@ -12,17 +12,22 @@
 #define DOUBLE_RAND (double(std::rand()) / RAND_MAX)
 
 
-void CreateScene(Scene* const scene)
+void CreateScene(Scene** const scene)
 {
     if (scene)
     {
-        *scene = Scene();
+        *scene = (Scene*)malloc(sizeof(Scene));
+        memset(*scene, 0, sizeof(Scene));
 
-        MeshReference cube = scene->add_cube(Vec3(-4, 3, 4), 2);
-        MeshReference back = scene->add_planeXY(Vec3(0, 10, -10), 20);
-        MeshReference left = scene->add_planeXY(Vec3(-10, 10, 0), 20, Vec3(0, ROT_90, 0));
-        MeshReference floor = scene->add_planeXY(Vec3::Zero, 20, Vec3(ROT_90, 0, 0));
-        MeshReference ball = scene->add_sphere(Vec3(0, 2, 0), 1.7);
+        **scene = Scene();
+        (*scene)->background_color = ARGB::TRANSPARENT;
+        (*scene)->add_parallel_light(Vec3(-1, -4, 1), ARGB(1, 1, .7), .4);
+
+        MeshReference cube = (*scene)->add_cube(Vec3(-4, 3, 4), 2);
+        MeshReference back = (*scene)->add_planeXY(Vec3(0, 10, -10), 20);
+        MeshReference left = (*scene)->add_planeXY(Vec3(-10, 10, 0), 20, Vec3(0, ROT_90, 0));
+        MeshReference floor = (*scene)->add_planeXY(Vec3::Zero, 20, Vec3(ROT_90, 0, 0));
+        MeshReference ball = (*scene)->add_sphere(Vec3(0, 2, 0), 1.7);
 
         cube.set_material(Material::diffuse(ARGB::RED));
         back.set_material(Material::diffuse(ARGB::BLUE));
@@ -32,6 +37,12 @@ void CreateScene(Scene* const scene)
 
         // TODO
     }
+}
+
+void DeleteScene(Scene** const scene)
+{
+    if (scene)
+        free(*scene);
 }
 
 void RenderImage(const Scene* const scene, RenderConfiguration const config, ARGB* const buffer, double* const progress)
@@ -119,7 +130,7 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
             const RayTraceIteration iteration = TraceRay(scene, config, &result, ray);
 
             const std::chrono::nanoseconds elapsed = std::chrono::high_resolution_clock::now() - start;
-            ARGB color(0);
+            ARGB color;
 
             switch (config.RenderMode)
             {
@@ -192,7 +203,7 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
     buffer[index] = buffer[index] + total / double(config.SamplesPerSubpixel);
 }
 
-Ray CreateRay(const CameraConfiguration& camera, const double w, const double h, const double x, const double y)
+inline Ray CreateRay(const CameraConfiguration& camera, const double w, const double h, const double x, const double y)
 {
     const double fov = 1.57079632679 / camera.ZoomFactor;
     const Vec3 gaze = camera.LookAt.sub(camera.Position).normalize();
@@ -210,7 +221,7 @@ Ray CreateRay(const CameraConfiguration& camera, const double w, const double h,
     return r;
 }
 
-RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& config, RayTraceResult* const result, const Ray& ray)
+inline RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& config, RayTraceResult* const result, const Ray& ray)
 {
     if (ray.IterationDepth < config.MaximumIterationCount)
     {
@@ -222,8 +233,9 @@ RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& 
 
         result->push_back(iteration);
 
-        for (const Triangle& triangle : scene->mesh)
+        for (int i = 0, l = scene->mesh.size(); i < l; ++i)
         {
+            const Triangle& triangle = scene->mesh[i];
             std::tuple<double, double> uv;
             double dist = INFINITY;
             bool ins = false;
@@ -233,6 +245,7 @@ RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& 
                 iteration.IntersectionPoint = ray.evaluate(dist);
                 iteration.SurfaceNormal = triangle.normal_at(iteration.IntersectionPoint);
                 iteration.UVCoordinates = uv;
+                iteration.TriangleIndex = i;
                 hit = true;
                 distance = dist;
                 inside = ins;
@@ -244,25 +257,68 @@ RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& 
         iteration.Distance = distance;
 
         if (!hit)
-            iteration.ComputedColor = ARGB(0, 0); // TODO : handle environment colors?
+            iteration.ComputedColor = scene->background_color;
         else
         {
-            Vec3 direction = ray.Direction.reflect(iteration.SurfaceNormal);
-
-
-
-            RayTraceIteration i1 = TraceRay(scene, config, result, ray.create_next(distance, direction));
-
-
-            // TODO
-            iteration.ComputedColor = ARGB(1.0 / (1 + ray.IterationDepth));
+            ComputeColor(scene, config, &iteration);
         }
 
-        iteration.ComputedColor = ARGB(hit);
         result->at(iter_index) = iteration;
 
         return iteration;
     }
 
     return RayTraceIteration();
+}
+
+inline void ComputeColor(const Scene* const scene, const RenderConfiguration& config, RayTraceIteration* const iteration)
+{
+    const Material& mat = scene->mesh[iteration->TriangleIndex].material;
+    const Vec3& normal = iteration->SurfaceNormal;
+
+    ARGB diffuse = ARGB::TRANSPARENT;
+    ARGB specular = ARGB::TRANSPARENT;
+
+
+    // LAMBERT DIFFUSE SHADING
+    for (const Light& light : scene->lights)
+        if (light.mode == Light::LightMode::Global)
+            diffuse += mat.DiffuseColor * (light.diffuse_color * light.diffuse_intensity);
+        else if (light.mode == Light::LightMode::Parallel)
+        {
+            const double intensity = light.intensity * light.direction.angle_to(normal);
+
+            if (intensity > 0)
+                color = color + (mat.DiffuseColor * (light.diffuse_color * intensity));
+        }
+
+    iteration->ComputedColor = color;
+
+    return;
+
+
+    //Vec3 direction = iteration->Ray.Direction.reflect(iteration->SurfaceNormal);
+    //RayTraceIteration i1 = TraceRay(scene, config, result, ray.create_next(distance, direction));
+}
+
+void GetPointLight(Light light, Vec3 point, Vec3 ray_dir)
+{
+
+
+    const Vec3& light_dir = light.direction;
+    const double dist_sq = light.mode == Light::LightMode::Spot ? std::pow(light.position.distance_to(point), 2) : INFINITY;
+
+    if (light.diffuse_intensity > 0)
+    {
+        const double diffuse_intensity = normal.normalize().dot(light_dir);
+
+        diffuse = light.diffuse_color * (diffuse_intensity * light.diffuse_intensity / dist_sq);
+    }
+
+    if (light.specular_intensity > 0)
+    {
+        const double specular_intensity = std::pow(light.direction.add(ray_dir).normalize().dot(normal), light.falloff_exponent);
+
+        specular = light.specular_color * (specular_intensity * light.specular_intensity / dist_sq);
+    }
 }
