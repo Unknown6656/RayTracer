@@ -1,10 +1,12 @@
-﻿#define SQ
+﻿// #define USE_SETTINGS
+#define SQ
 
 using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -39,7 +41,7 @@ namespace Visualizer
         public static double EYE_DIST = 18;
         public static Vec3 EYE = new(0, 0, EYE_DIST);
         public static Vec3 TARGET = new(0, 3, 0);
-        public static Scene SCENE;
+        public static unsafe void* SCENE;
 
 
         public unsafe MainWindow()
@@ -50,7 +52,14 @@ namespace Visualizer
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.InterpolationMode = InterpolationMode.NearestNeighbor;
 
-            RayTracer.CreateScene(out SCENE);
+            fixed (void** ptr = &SCENE)
+                RayTracer.CreateScene(ptr);
+        }
+
+        unsafe ~MainWindow()
+        {
+            fixed (void** ptr = &SCENE)
+                RayTracer.DeleteScene(ptr);
         }
 
         private void MainWindow_Load(object sender, EventArgs e)
@@ -66,6 +75,27 @@ namespace Visualizer
             trackBar1_Scroll(sender, e);
             trackBar2_Scroll(sender, e);
             trackBar3_Scroll(sender, e);
+
+#if USE_SETTINGS
+            Properties.Settings.Default.Upgrade();
+
+            if (Properties.Settings.Default.WindowSize.Width > 0 && Properties.Settings.Default.WindowSize.Height > 0)
+                Size = Properties.Settings.Default.WindowSize;
+
+            if (WindowState != FormWindowState.Minimized)
+                WindowState = Properties.Settings.Default.WindowState;
+
+            Location = Properties.Settings.Default.WindowLocation;
+#endif
+        }
+
+        private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
+        {
+#if USE_SETTINGS
+            Properties.Settings.Default.WindowState = WindowState;
+            (Properties.Settings.Default.WindowLocation, Properties.Settings.Default.WindowSize) = WindowState == FormWindowState.Normal ? (Location, Size) : (RestoreBounds.Location, RestoreBounds.Size);
+            Properties.Settings.Default.Save();
+#endif
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -145,7 +175,7 @@ namespace Visualizer
                 unsafe
                 {
                     fixed ((double, double, double, double)* iptr = buffer)
-                        RayTracer.RenderImage(ref SCENE, config, iptr, ref progress);
+                        RayTracer.RenderImage(SCENE, config, iptr, ref progress);
                 }
 
                 finished = true;
