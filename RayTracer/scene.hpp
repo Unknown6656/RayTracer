@@ -9,7 +9,7 @@ struct MeshReference;
 
 struct Triangle
 {
-    Material Mat;
+    Material material;
     const Vec3 A, B, C;
     const double surface_area;
 private:
@@ -31,12 +31,12 @@ public:
 
     inline Material get_material() const noexcept
     {
-        return Mat;
+        return material;
     }
 
     inline void set_material(const Material& mat) noexcept
     {
-        Mat = mat;
+        material = mat;
     }
 
     inline Vec3 normal_at(const Vec3& vec) const noexcept
@@ -55,11 +55,16 @@ public:
         return hit;
     }
 
-    // why? because c++ is fucking retarded, that's why!
-    inline Triangle& operator =(const Triangle& value)
+    inline std::string to_string() const noexcept
     {
-        return this == &value ? *this : *new(this)Triangle(value);
+        std::stringstream ss;
+        ss << '[A=' << A << ",B=" << B << ",C=" << C << ",N=" << _normal << ",Area=" << surface_area << "]";
+
+        return ss.str();
     }
+
+    OSTREAM_OPERATOR(Triangle);
+    CPP_IS_FUCKING_RETARDED(Triangle);
 };
 
 struct MeshReference
@@ -132,11 +137,68 @@ struct MeshReference
     }
 };
 
+struct Light
+{
+    enum class LightMode
+    {
+        Spot,
+        Parallel,
+        Global,
+    };
+
+    const LightMode mode;
+    const Vec3 position;
+    const Vec3 direction;
+    const ARGB diffuse_color;
+    const ARGB specular_color;
+    const double diffuse_intensity;
+    const double specular_intensity;
+    const double opening_angle;
+    const double falloff_exponent;
+
+
+    Light() : Light(ARGB::WHITE, ARGB::WHITE, Vec3(0, 10, 0), Vec3(0, -1, 0), 1, 1, DEG2RAD(20), 3, LightMode::Spot) { }
+
+    Light(const ARGB& diffuse, const ARGB& specular, const Vec3& pos, const Vec3& dir, const double diffuse_power, const double specular_power, const double opening_angle, const double falloff_exponent, const LightMode mode)
+        : diffuse_color(diffuse)
+        , specular_color(specular)
+        , position(pos)
+        , direction(dir.normalize())
+        , opening_angle(opening_angle)
+        , falloff_exponent(falloff_exponent)
+        , diffuse_intensity(diffuse_power)
+        , specular_intensity(specular_power)
+        , mode(mode)
+    {
+    }
+
+    inline std::string to_string() const noexcept
+    {
+        std::stringstream ss;
+        ss << '[P=' << position << ",D=" << direction << ",C=" << diffuse_color << ",A=" << angle << ",F=" << falloff << ",I=" << intensity;
+        ss << ",M=" << (mode == LightMode::Parallel ? "par" : mode == LightMode::Global ? "glob" : "spot") << "]";
+
+        return ss.str();
+    }
+
+    OSTREAM_OPERATOR(Light);
+    CPP_IS_FUCKING_RETARDED(Light);
+};
+
 struct Scene
 {
     // static_assert(std::is_standard_layout_v<Scene>);
     std::vector<Triangle> mesh;
+    std::vector<Light> lights;
+    ARGB background_color;
 
+
+    Scene()
+        : mesh(std::vector<Triangle>())
+        , lights(std::vector<Light>())
+        , background_color(ARGB::BLACK)
+    {
+    }
 
     inline MeshReference add_triangle(const Triangle& triangle, EULER_OPTARG) noexcept
     {
@@ -305,5 +367,33 @@ struct Scene
             );
 
         return sphere;
+    }
+
+    inline const Light& add_light(const Light& light) noexcept
+    {
+        lights.push_back(light);
+
+        return light;
+    }
+
+    inline const Light& add_spot_light(const Vec3& position, const Vec3& direction, const ARGB& color, const double intensity = 1, const double opening_angle = DEG2RAD(20), const double falloff_exp = 3)
+    {
+        const Light light(color, color, position, direction, intensity, intensity, opening_angle, falloff_exp, Light::LightMode::Spot);
+
+        return add_light(light);
+    }
+
+    inline const Light& add_global_light(const ARGB& color, const double intensity = 1) noexcept
+    {
+        const Light light(color, color, Vec3::Zero, Vec3::UnitX, intensity, intensity, 0, 0, Light::LightMode::Spot);
+
+        return add_light(light);
+    }
+
+    inline const Light& add_parallel_light(const Vec3& direction, const ARGB& color, const double intensity = 1) noexcept
+    {
+        const Light light(color, color, Vec3::Zero, direction, intensity, intensity, 0, 0, Light::LightMode::Parallel);
+
+        return add_light(light);
     }
 };
