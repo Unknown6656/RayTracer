@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="argb.cpp" />
+    <ClCompile Include="primitive.hpp" />
     <ClCompile Include="ray_tracer.cpp" />
     <ClCompile Include="vec3.cpp" />
   </ItemGroup>

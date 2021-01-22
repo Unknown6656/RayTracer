@@ -40,5 +40,8 @@
     <ClCompile Include="argb.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="primitive.hpp">
+      <Filter>headers</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
