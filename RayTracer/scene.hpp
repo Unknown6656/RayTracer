@@ -1,71 +1,10 @@
 #pragma once
 
-#include "ray.hpp"
+#include "primitive.hpp"
 
 
 struct Scene;
-struct MeshReference;
 
-
-struct Triangle
-{
-    Material material;
-    const Vec3 A, B, C;
-    const double surface_area;
-private:
-    /// THIS IS NOT NORMALIZED !
-    const Vec3 _normal;
-public:
-
-
-    Triangle() noexcept : Triangle(Vec3(), Vec3(), Vec3()) { }
-
-    Triangle(const Vec3& a, const Vec3& b, const Vec3& c) noexcept
-        : A(a)
-        , B(b)
-        , C(c)
-        , _normal(b.sub(a).cross(c.sub(a)))
-        , surface_area(b.sub(a).cross(c.sub(a)).length() / 2)
-    {
-    }
-
-    inline Material get_material() const noexcept
-    {
-        return material;
-    }
-
-    inline void set_material(const Material& mat) noexcept
-    {
-        material = mat;
-    }
-
-    inline Vec3 normal_at(const Vec3& vec) const noexcept
-    {
-        return _normal;
-    }
-
-    inline bool intersect(const Ray& ray, double* const __restrict distance, bool* const __restrict inside, std::tuple<double, double>* const uv = nullptr) const noexcept
-    {
-        double u, v;
-        const bool hit = ray.MöllerTrumboreIntersect(A, B, C, distance, &u, &v, inside);
-
-        if (uv)
-            *uv = std::make_tuple(u, v);
-
-        return hit;
-    }
-
-    inline std::string to_string() const noexcept
-    {
-        std::stringstream ss;
-        ss << '[A=' << A << ",B=" << B << ",C=" << C << ",N=" << _normal << ",Area=" << surface_area << "]";
-
-        return ss.str();
-    }
-
-    OSTREAM_OPERATOR(Triangle);
-    CPP_IS_FUCKING_RETARDED(Triangle);
-};
 
 struct MeshReference
 {
@@ -95,45 +34,50 @@ struct MeshReference
                     _indices.push_back(index);
     }
 
-    inline int triangle_count() const noexcept
+    inline int shape_count() const noexcept
     {
         return _indices.size();
     }
 
-    inline std::vector<Triangle> mesh() const noexcept
+    inline std::vector<Primitive> mesh() const noexcept
     {
-        std::vector<Triangle>* const mesh = reinterpret_cast<std::vector<Triangle>*>(_scene);
-        std::vector<Triangle> triangles;
+        std::vector<Primitive>* const mesh = reinterpret_cast<std::vector<Primitive>*>(_scene);
+        std::vector<Primitive> shapes;
 
         if (mesh && mesh->size())
             for (const int index : _indices)
                 if (index > 0 && index < mesh->size())
-                    triangles.push_back(mesh->at(index));
+                    shapes.push_back(mesh->at(index));
 
-        return triangles;
+        return shapes;
     }
 
     inline double surface_area() const
     {
-        std::vector<Triangle>* const mesh = reinterpret_cast<std::vector<Triangle>*>(_scene);
+        std::vector<Primitive>* const mesh = reinterpret_cast<std::vector<Primitive>*>(_scene);
         double area = 0;
 
         if (mesh && mesh->size())
             for (const int index : _indices)
                 if (index > 0 && index < mesh->size())
-                    area += mesh->at(index).surface_area;
+                    area += mesh->at(index).surface_area();
 
         return area;
     }
 
     inline void set_material(const Material& mat) noexcept
     {
-        std::vector<Triangle>* const mesh = reinterpret_cast<std::vector<Triangle>*>(_scene);
+        std::vector<Primitive>* const mesh = reinterpret_cast<std::vector<Primitive>*>(_scene);
 
         if (mesh && mesh->size())
             for (const int index : _indices)
                 if (index > 0 && index < mesh->size())
                     mesh->at(index).set_material(mat);
+    }
+
+    inline static MeshReference Empty(Scene* scene) noexcept
+    {
+        return MeshReference(scene, std::vector<int>());
     }
 };
 
@@ -175,8 +119,8 @@ struct Light
     inline std::string to_string() const noexcept
     {
         std::stringstream ss;
-        ss << '[P=' << position << ",D=" << direction << ",C=" << diffuse_color << ",A=" << angle << ",F=" << falloff << ",I=" << intensity;
-        ss << ",M=" << (mode == LightMode::Parallel ? "par" : mode == LightMode::Global ? "glob" : "spot") << "]";
+        ss << '[P=' << position << ",D=" << direction << ",O=" << opening_angle << ",F=" << falloff_exponent << ",DIFF=" << diffuse_intensity;
+        ss << diffuse_color << ",SPEC=" << specular_intensity << specular_color << ",M=" << (mode == LightMode::Parallel ? "par" : mode == LightMode::Global ? "glob" : "spot") << "]";
 
         return ss.str();
     }
@@ -188,29 +132,31 @@ struct Light
 struct Scene
 {
     // static_assert(std::is_standard_layout_v<Scene>);
-    std::vector<Triangle> mesh;
+
+    // DO NOT CHANGE THE LAYOUT OF THIS STRUCT. IT WILL BREAK OTHERWISE !
+    std::vector<Primitive> mesh;
     std::vector<Light> lights;
     ARGB background_color;
 
 
-    Scene()
-        : mesh(std::vector<Triangle>())
+    Scene() noexcept
+        : mesh(std::vector<Primitive>())
         , lights(std::vector<Light>())
         , background_color(ARGB::BLACK)
     {
     }
 
-    inline MeshReference add_triangle(const Triangle& triangle, EULER_OPTARG) noexcept
-    {
-        return add_triangle(triangle.A, triangle.B, triangle.C, euler_angles);
-    }
-
     inline MeshReference add_triangle(const Vec3& a, const Vec3& b, const Vec3& c, EULER_OPTARG) noexcept
     {
         const std::vector<double> mat = Vec3::create_rotation_matrix(euler_angles);
-        Triangle triangle(a.transform(mat), b.transform(mat), c.transform(mat));
+        const Primitive triangle(a.transform(mat), b.transform(mat), c.transform(mat));
 
-        mesh.push_back(triangle);
+        return add_shape(triangle);
+    }
+
+    inline MeshReference add_shape(const Primitive& shape) noexcept
+    {
+        mesh.push_back(shape);
 
         return MeshReference(this, mesh.size() - 1);
     }
@@ -315,7 +261,7 @@ struct Scene
     inline MeshReference subdivide(const int triangle_idx)
     {
         if (triangle_idx > 0 && triangle_idx < this->mesh.size())
-            ; // TODO : return empty mesh
+            return MeshReference::Empty(this);
 
         //     A
         //    / \
@@ -323,10 +269,10 @@ struct Scene
         //  / \ / \
         // B---BC--C
 
-        Triangle* const triangle = &mesh[triangle_idx];
-        const Vec3& A = triangle->A;
-        const Vec3& B = triangle->B;
-        const Vec3& C = triangle->C;
+        const TriangleData& triangle = mesh[triangle_idx].data.triangle;
+        const Vec3& A = triangle.A;
+        const Vec3& B = triangle.B;
+        const Vec3& C = triangle.C;
         const Vec3 mAB = A.add(B).scale(.5);
         const Vec3 mAC = A.add(C).scale(.5);
         const Vec3 mBC = B.add(C).scale(.5);
@@ -352,7 +298,7 @@ struct Scene
         return MeshReference(this, references);
     }
 
-    inline MeshReference add_sphere(const Vec3& center, const double& radius, const unsigned int subdivison_level = 2) noexcept
+    inline MeshReference add_triangularized_sphere(const Vec3& center, const double& radius, const unsigned int subdivison_level = 2) noexcept
     {
         MeshReference sphere = add_icosahedron(center, radius);
 
@@ -360,13 +306,22 @@ struct Scene
             sphere = subdivide(sphere);
 
         for (const int index : sphere._indices)
-            mesh[index] = Triangle(
-                mesh[index].A.sub(center).normalize().scale(radius).add(center),
-                mesh[index].B.sub(center).normalize().scale(radius).add(center),
-                mesh[index].C.sub(center).normalize().scale(radius).add(center)
+        {
+            const TriangleData& triangle = mesh[index].data.triangle;
+
+            mesh[index] = Primitive(
+                triangle.A.sub(center).normalize().scale(radius).add(center),
+                triangle.B.sub(center).normalize().scale(radius).add(center),
+                triangle.C.sub(center).normalize().scale(radius).add(center)
             );
+        }
 
         return sphere;
+    }
+
+    inline MeshReference add_sphere(const Vec3& center, const double& radius) noexcept
+    {
+        return add_shape(Primitive(center, radius));
     }
 
     inline const Light& add_light(const Light& light) noexcept

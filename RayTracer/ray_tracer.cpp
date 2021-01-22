@@ -21,19 +21,22 @@ void CreateScene(Scene** const scene)
 
         **scene = Scene();
         (*scene)->background_color = ARGB::TRANSPARENT;
-        (*scene)->add_parallel_light(Vec3(-1, -4, 1), ARGB(1, 1, .7), .4);
+        (*scene)->add_spot_light(Vec3(1, 10, 1), Vec3(0, -1, 0), ARGB(1, 1, .7), 100);
+        //(*scene)->add_parallel_light(Vec3(-1, -4, 1), ARGB(1, 1, .7), .4);
 
         MeshReference cube = (*scene)->add_cube(Vec3(-4, 3, 4), 2);
         MeshReference back = (*scene)->add_planeXY(Vec3(0, 10, -10), 20);
         MeshReference left = (*scene)->add_planeXY(Vec3(-10, 10, 0), 20, Vec3(0, ROT_90, 0));
         MeshReference floor = (*scene)->add_planeXY(Vec3::Zero, 20, Vec3(ROT_90, 0, 0));
         MeshReference ball = (*scene)->add_sphere(Vec3(0, 2, 0), 1.7);
+        MeshReference ico = (*scene)->add_icosahedron(Vec3(5, 3, -5), 2);
 
         cube.set_material(Material::diffuse(ARGB::RED));
         back.set_material(Material::diffuse(ARGB::BLUE));
         left.set_material(Material::emissive(ARGB::GREEN, 0.2));
         floor.set_material(Material::reflective(ARGB::BLACK, 1));
         ball.set_material(Material::reflective(ARGB(.5, .7, .84), .8));
+        ico.set_material(Material::reflective(ARGB(.5, .7, .84), .8));
 
         // TODO
     }
@@ -235,15 +238,15 @@ inline RayTraceIteration TraceRay(const Scene* const scene, const RenderConfigur
 
         for (int i = 0, l = scene->mesh.size(); i < l; ++i)
         {
-            const Triangle& triangle = scene->mesh[i];
+            const Primitive& primitive = scene->mesh[i];
             std::tuple<double, double> uv;
             double dist = INFINITY;
             bool ins = false;
 
-            if (triangle.intersect(ray, &dist, &ins, &uv) && dist < distance)
+            if (primitive.intersect(ray, &dist, &ins, &uv) && dist < distance)
             {
                 iteration.IntersectionPoint = ray.evaluate(dist);
-                iteration.SurfaceNormal = triangle.normal_at(iteration.IntersectionPoint);
+                iteration.SurfaceNormal = primitive.normal_at(iteration.IntersectionPoint);
                 iteration.UVCoordinates = uv;
                 iteration.TriangleIndex = i;
                 hit = true;
@@ -283,42 +286,36 @@ inline void ComputeColor(const Scene* const scene, const RenderConfiguration& co
     // LAMBERT DIFFUSE SHADING
     for (const Light& light : scene->lights)
         if (light.mode == Light::LightMode::Global)
-            diffuse += mat.DiffuseColor * (light.diffuse_color * light.diffuse_intensity);
+            diffuse = diffuse + mat.DiffuseColor * (light.diffuse_color * light.diffuse_intensity);
         else if (light.mode == Light::LightMode::Parallel)
         {
-            const double intensity = light.intensity * light.direction.angle_to(normal);
+            const double intensity = light.diffuse_intensity * light.direction.angle_to(normal);
 
             if (intensity > 0)
-                color = color + (mat.DiffuseColor * (light.diffuse_color * intensity));
+                diffuse = diffuse + (mat.DiffuseColor * (light.diffuse_color * intensity));
+        }
+        else if (light.mode == Light::LightMode::Spot)
+        {
+            const double dist_sq = std::pow(light.position.distance_to(iteration->IntersectionPoint), 2);
+
+            if (light.diffuse_intensity > 0)
+            {
+                const double diffuse_intensity = normal.normalize().dot(light.direction);
+
+                diffuse = light.diffuse_color * (diffuse_intensity * light.diffuse_intensity / dist_sq);
+            }
+
+            if (light.specular_intensity > 0)
+            {
+                const double specular_intensity = std::pow(light.direction.add(iteration->Ray.Direction).normalize().dot(normal), light.falloff_exponent);
+
+                specular = light.specular_color * (specular_intensity * light.specular_intensity / dist_sq);
+            }
         }
 
-    iteration->ComputedColor = color;
+    iteration->ComputedColor = diffuse;
 
     return;
-
-
     //Vec3 direction = iteration->Ray.Direction.reflect(iteration->SurfaceNormal);
     //RayTraceIteration i1 = TraceRay(scene, config, result, ray.create_next(distance, direction));
-}
-
-void GetPointLight(Light light, Vec3 point, Vec3 ray_dir)
-{
-
-
-    const Vec3& light_dir = light.direction;
-    const double dist_sq = light.mode == Light::LightMode::Spot ? std::pow(light.position.distance_to(point), 2) : INFINITY;
-
-    if (light.diffuse_intensity > 0)
-    {
-        const double diffuse_intensity = normal.normalize().dot(light_dir);
-
-        diffuse = light.diffuse_color * (diffuse_intensity * light.diffuse_intensity / dist_sq);
-    }
-
-    if (light.specular_intensity > 0)
-    {
-        const double specular_intensity = std::pow(light.direction.add(ray_dir).normalize().dot(normal), light.falloff_exponent);
-
-        specular = light.specular_color * (specular_intensity * light.specular_intensity / dist_sq);
-    }
 }

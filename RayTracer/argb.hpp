@@ -62,11 +62,6 @@ struct ARGB
     {
         return ARGB(A / factor, R / factor, G / factor, B / factor);
     }
-
-    inline ARGB& operator+=(const ARGB& other)
-    {
-        return ARGB(*this + other);
-    }
 };
 
 struct Material
