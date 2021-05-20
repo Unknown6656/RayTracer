@@ -3,64 +3,64 @@
 #include "vec3.hpp"
 
 
-struct Ray
+struct ray
 {
-    const Vec3 Origin;
-    const Vec3 Direction;
-    const size_t IterationDepth;
-     
+    const vec3 origin;
+    const vec3 direction;
+    const size_t iteration_depth;
 
-    Ray() noexcept : Ray(Vec3(), Vec3(), 0) { }
 
-    Ray(const Vec3& origin, const Vec3& dir) noexcept : Ray(origin, dir, 0) { }
+    ray() noexcept : ray(vec3(), vec3(), 0) { }
 
-    Ray(const Vec3& origin, const Vec3& dir, const size_t depth) noexcept
-        : Origin(origin)
-        , Direction(dir.normalize())
-        , IterationDepth(depth)
+    ray(const vec3& origin, const vec3& dir) noexcept : ray(origin, dir, 0) { }
+
+    ray(const vec3& origin, const vec3& dir, const size_t depth) noexcept
+        : origin(origin)
+        , direction(dir.normalize())
+        , iteration_depth(depth)
     {
     }
 
-    inline Vec3 evaluate(const double at) const noexcept
+    inline vec3 evaluate(const float at) const noexcept
     {
-        return Origin + Direction * at;
+        return origin + direction * at;
     }
 
-    inline Ray create_next(const double at, const Vec3& next_dir) const noexcept
+    inline ray create_next(const float at, const vec3& next_dir) const noexcept
     {
-        return Ray(evaluate(at), next_dir, IterationDepth + 1);
+        return ray(evaluate(at), next_dir, iteration_depth + 1);
     }
 
     bool MöllerTrumboreIntersect(
-        const Vec3& A, const Vec3& B, const Vec3& C,
-        double* const __restrict t, double* const __restrict u, double* const __restrict v,
+        const vec3& A, const vec3& B, const vec3& C,
+        float* const __restrict t, float* const __restrict u, float* const __restrict v,
         bool* const __restrict hit_backface
     ) const noexcept
     {
         if (!t || !u || !v)
             return false;
 
-        const Vec3 edgeAB = B - A;
-        const Vec3 edgeAC = C - A;
-        const Vec3 pvec = Direction.cross(edgeAC);
-        const double det = edgeAB.dot(pvec);
+        const vec3 edgeAB = B - A;
+        const vec3 edgeAC = C - A;
+        const vec3 pvec = direction.cross(edgeAC);
+        const float det = edgeAB.dot(pvec);
 
         if (std::abs(det) < EPSILON)
             return false;
         else if (hit_backface)
             *hit_backface = det < 0;
 
-        const double inv_det = 1 / det;
-        const Vec3 tvec = Origin - A;
+        const float inv_det = 1 / det;
+        const vec3 tvec = origin - A;
 
         *u = tvec.dot(pvec) * inv_det;
 
         if (*u < 0 || *u > 1)
             return false;
 
-        const Vec3 qvec = tvec.cross(edgeAB);
+        const vec3 qvec = tvec.cross(edgeAB);
 
-        *v = Direction.dot(qvec) * inv_det;
+        *v = direction.dot(qvec) * inv_det;
 
         if (*v < 0 || *u + *v > 1)
             return false;
@@ -73,26 +73,31 @@ struct Ray
     inline std::string to_string() const noexcept
     {
         std::stringstream ss;
-        ss << "[O=" << Origin << ", D=" << Direction << ", I=" << IterationDepth << ']';
+        ss << "[O=" << origin << ", D=" << direction << ", I=" << iteration_depth << ']';
 
         return ss.str();
     }
 
-    OSTREAM_OPERATOR(Ray);
-    CPP_IS_FUCKING_RETARDED(Ray);
+    OSTREAM_OPERATOR(ray);
+    CPP_IS_FUCKING_RETARDED(ray);
+
+    inline vec3 operator()(const float at) const noexcept
+    {
+        return evaluate(at);
+    }
 };
 
 struct Triangle;
 
 struct RayTraceIteration
 {
-    Ray Ray;
+    ray Ray;
     bool Hit;
-    double Distance;
+    float Distance;
     ARGB ComputedColor;
-    Vec3 SurfaceNormal;
-    Vec3 IntersectionPoint;
-    std::tuple<double, double> UVCoordinates;
+    vec3 SurfaceNormal;
+    vec3 IntersectionPoint;
+    std::tuple<float, float> UVCoordinates;
     int TriangleIndex;
 
 

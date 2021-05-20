@@ -1,15 +1,14 @@
 ﻿// #define USE_SETTINGS
 #define SQ
 
-using System;
-using System.Diagnostics;
-using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
+using System.Drawing;
 using System.Windows.Forms;
-
+using System.Threading.Tasks;
+using System.Threading;
+using System.Diagnostics;
+using System;
 
 namespace Visualizer
 {
@@ -36,12 +35,16 @@ namespace Visualizer
         public static int SAMPLES = 1;
 #endif
         public static RenderMode MODE = RenderMode.Colors;
-        public const double FOCAL_LENGTH = 1;
-        public static double ZOOM = 2;
-        public static double EYE_DIST = 18;
+        public const float FOCAL_LENGTH = 1;
+        public static float ZOOM = 2;
+        public static float EYE_DIST = 18;
         public static Vec3 EYE = new(0, 0, EYE_DIST);
         public static Vec3 TARGET = new(0, 3, 0);
-        public static unsafe void* SCENE;
+        public static unsafe void* SCENE = null;
+
+        private static readonly object _mutex = new();
+        private static int is_rendering = 0;
+        private static int is_pending = 0;
 
 
         public unsafe MainWindow()
@@ -100,6 +103,14 @@ namespace Visualizer
 
         private async void button1_Click(object sender, EventArgs e)
         {
+            lock (_mutex)
+                if (Interlocked.Exchange(ref is_rendering, 1) != 0)
+                {
+                    Interlocked.Exchange(ref is_pending, 1);
+
+                    return;
+                }
+
             button1.Enabled = false;
             progressBar1.Value = 0;
 
@@ -121,8 +132,8 @@ namespace Visualizer
                     SamplesPerSubpixel = (ulong)SAMPLES,
                     SubpixelsPerPixel = (ulong)SUBPIXELS,
                 };
-                var buffer = new (double A, double R, double G, double B)[config.HorizontalResolution * config.VerticalResolution];
-                double progress = 0;
+                (float A, float R, float G, float B)[] buffer = new (float, float, float, float)[config.HorizontalResolution * config.VerticalResolution];
+                float progress = 0;
                 unsafe void update_image()
                 {
                     Bitmap bmp = new Bitmap(WIDTH, HEIGHT, PixelFormat.Format32bppArgb);
@@ -131,19 +142,16 @@ namespace Visualizer
 
                     Parallel.For(0, buffer.Length, i =>
                     {
-                        double a = buffer[i].A;
-                        double r = buffer[i].R;
-                        double g = buffer[i].G;
-                        double b = buffer[i].B;
-                        uint b_a = a < 0 ? 0 : a > 1 ? 255 : (byte)(a * 255);
-                        uint b_r = r < 0 ? 0 : r > 1 ? 255 : (byte)(r * 255);
-                        uint b_g = g < 0 ? 0 : g > 1 ? 255 : (byte)(g * 255);
-                        uint b_b = b < 0 ? 0 : b > 1 ? 255 : (byte)(b * 255);
+                        float a = buffer[i].A;
+                        float r = buffer[i].R;
+                        float g = buffer[i].G;
+                        float b = buffer[i].B;
+                        uint b_a = a < 0 ? 0u : a > 1 ? 255u : (uint)(a * 255);
+                        uint b_r = r < 0 ? 0u : r > 1 ? 255u : (uint)(r * 255);
+                        uint b_g = g < 0 ? 0u : g > 1 ? 255u : (uint)(g * 255);
+                        uint b_b = b < 0 ? 0u : b > 1 ? 255u : (uint)(b * 255);
 
-                        ptr[i] = b_a << 24
-                               | b_r << 16
-                               | b_g << 8
-                               | b_b;
+                        ptr[i] = b_a << 24 | b_r << 16 | b_g << 8 | b_b;
                     });
 
                     bmp.UnlockBits(dat);
@@ -174,7 +182,7 @@ namespace Visualizer
 
                 unsafe
                 {
-                    fixed ((double, double, double, double)* iptr = buffer)
+                    fixed ((float, float, float, float)* iptr = buffer)
                         RayTracer.RenderImage(SCENE, config, iptr, ref progress);
                 }
 
@@ -190,34 +198,71 @@ namespace Visualizer
                     button1.Text = $"(RE)RENDER                    previous: {sw.ElapsedMilliseconds:F4}ms";
                     pictureBox1.Image?.Save("./render.png", ImageFormat.Png);
                 }));
+
+                lock (_mutex)
+                {
+                    Interlocked.Exchange(ref is_rendering, 0);
+
+                    if (Interlocked.Exchange(ref is_pending, 0) == 0)
+                        return;
+                }
+
+                Invoke(new MethodInvoker(() => button1_Click(sender, e)));
             });
         }
 
         private void trackBar1_Scroll(object sender, EventArgs e)
         {
-            double angle = trackBar1.Value * 2 * Math.PI / trackBar1.Maximum;
+            float angle = (float)(trackBar1.Value * 2 * Math.PI / trackBar1.Maximum);
 
-            EYE.Z = Math.Cos(angle) * EYE_DIST;
-            EYE.X = Math.Sin(angle) * EYE_DIST;
-            label1.Text = $"Hor.Rot.\n{angle*57.2957795131:F1}°";
+            EYE.Z = (float)(Math.Cos(angle) * EYE_DIST);
+            EYE.X = (float)(Math.Sin(angle) * EYE_DIST);
+            label1.Text = $"Hor.Rot.\n{angle * 57.2957795131:F1}°";
+
+            if (checkBox1.Checked)
+                button1_Click(sender, e);
         }
 
         private void trackBar2_Scroll(object sender, EventArgs e)
         {
             EYE.Y = trackBar2.Value;
             label2.Text = $"Hor.Rot.\nY={EYE.Y:F2}m";
+
+            if (checkBox1.Checked)
+                button1_Click(sender, e);
         }
 
         private void trackBar3_Scroll(object sender, EventArgs e)
         {
-            ZOOM = trackBar3.Value / 20d;
+            ZOOM = trackBar3.Value / 20f;
             label3.Text = $"Zoom\n{ZOOM:F2}x";
+
+            if (checkBox1.Checked)
+                button1_Click(sender, e);
         }
 
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e) => Enum.TryParse(comboBox1.SelectedValue.ToString(), out MODE);
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            Enum.TryParse(comboBox1.SelectedValue.ToString(), out MODE);
 
-        private void numericUpDown1_ValueChanged(object sender, EventArgs e) => SAMPLES = (int)numericUpDown1.Value;
+            if (checkBox1.Checked)
+                button1_Click(sender, e);
+        }
 
-        private void numericUpDown2_ValueChanged(object sender, EventArgs e) => SUBPIXELS = (int)numericUpDown2.Value;
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
+        {
+            SAMPLES = (int)numericUpDown1.Value;
+
+            if (checkBox1.Checked)
+                button1_Click(sender, e);
+        }
+
+        private void numericUpDown2_ValueChanged(object sender, EventArgs e)
+        {
+            SUBPIXELS = (int)numericUpDown2.Value;
+
+            if (checkBox1.Checked)
+                button1_Click(sender, e);
+        }
     }
 }

@@ -9,7 +9,7 @@
 #include "ray_tracer.hpp"
 
 #define INIT_RAND std::srand(std::time(nullptr))
-#define DOUBLE_RAND (double(std::rand()) / RAND_MAX)
+#define float_RAND (float(std::rand()) / RAND_MAX)
 
 
 void CreateScene(Scene** const scene)
@@ -21,19 +21,19 @@ void CreateScene(Scene** const scene)
 
         **scene = Scene();
         (*scene)->background_color = ARGB::TRANSPARENT;
-        (*scene)->add_spot_light(Vec3(1, 10, 1), Vec3(0, -1, 0), ARGB(1, 1, .7), 100);
+        (*scene)->add_spot_light(vec3(1, 10, 1), vec3(0, -1, 0), ARGB(1, 1, .7), 100);
         //(*scene)->add_parallel_light(Vec3(-1, -4, 1), ARGB(1, 1, .7), .4);
 
-        MeshReference cube = (*scene)->add_cube(Vec3(-4, 3, 4), 2);
-        MeshReference back = (*scene)->add_planeXY(Vec3(0, 10, -10), 20);
-        MeshReference left = (*scene)->add_planeXY(Vec3(-10, 10, 0), 20, Vec3(0, ROT_90, 0));
-        MeshReference floor = (*scene)->add_planeXY(Vec3::Zero, 20, Vec3(ROT_90, 0, 0));
-        MeshReference ball = (*scene)->add_sphere(Vec3(0, 2, 0), 1.7);
-        MeshReference ico = (*scene)->add_icosahedron(Vec3(5, 3, -5), 2);
+        MeshReference cube = (*scene)->add_cube(vec3(-4, 3, 4), 2);
+        //MeshReference back = (*scene)->add_planeXY(vec3(0, 10, -10), 20);
+        //MeshReference left = (*scene)->add_planeXY(vec3(-10, 10, 0), 20, vec3(0, ROT_90, 0));
+        MeshReference floor = (*scene)->add_planeXY(vec3::Zero, 20, vec3(ROT_90, 0, 0));
+        MeshReference ball = (*scene)->add_sphere(vec3(0, 2, 0), 1.7);
+        MeshReference ico = (*scene)->add_icosahedron(vec3(5, 3, -5), 2);
 
         cube.set_material(Material::diffuse(ARGB::RED));
-        back.set_material(Material::diffuse(ARGB::BLUE));
-        left.set_material(Material::emissive(ARGB::GREEN, 0.2));
+        //back.set_material(Material::diffuse(ARGB::BLUE));
+        //left.set_material(Material::emissive(ARGB::GREEN, 0.2));
         floor.set_material(Material::reflective(ARGB::BLACK, 1));
         ball.set_material(Material::reflective(ARGB(.5, .7, .84), .8));
         ico.set_material(Material::reflective(ARGB(.5, .7, .84), .8));
@@ -48,7 +48,7 @@ void DeleteScene(Scene** const scene)
         free(*scene);
 }
 
-void RenderImage(const Scene* const scene, RenderConfiguration const config, ARGB* const buffer, double* const progress)
+void RenderImage(const Scene* const scene, RenderConfiguration const config, ARGB* const buffer, float* const progress)
 {
     assert(buffer != nullptr);
 
@@ -59,7 +59,7 @@ void RenderImage(const Scene* const scene, RenderConfiguration const config, ARG
     const int w = config.HorizontalResolution;
     const int h = config.VerticalResolution;
     const int sub = config.SubpixelsPerPixel;
-    const size_t total_samples = double(w) * h * sub * sub * config.SamplesPerSubpixel;
+    const size_t total_samples = float(w) * h * sub * sub * config.SamplesPerSubpixel;
 
     std::cout << std::endl << "----------------------------------------------------------------" << std::endl
         << "Resolution(in pixels) : " << w << "x" << h << std::endl
@@ -97,13 +97,13 @@ void RenderImage(const Scene* const scene, RenderConfiguration const config, ARG
                         ComputeRenderPass(scene, config, pixel_x, pixel_y, buffer);
 
                         if (progress)
-                            *progress = double(++pass_counter) / (double(w) * h * config.SamplesPerSubpixel);
+                            *progress = float(++pass_counter) / (float(w) * h * config.SamplesPerSubpixel);
                     }
                 );
             }
 
     const auto elapsed = std::chrono::high_resolution_clock::now() - total_timer;
-    const double µs = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+    const float µs = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 
     printf("Render time: %fs\n", µs * 1e-6);
 }
@@ -113,23 +113,23 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
     const int w = config.HorizontalResolution;
     const int h = config.VerticalResolution;
     const int sub = config.SubpixelsPerPixel;
-    const double subd(sub);
-    const double pixel_x = raw_x / double(w) * 2.0 - 1.0;
-    const double pixel_y = 1.0 - raw_y / double(h) * 2.0;
-    const double norm_factor = 1.0 / (subd * subd);
+    const float subd(sub);
+    const float pixel_x = raw_x / float(w) * 2.0 - 1.0;
+    const float pixel_y = 1.0 - raw_y / float(h) * 2.0;
+    const float norm_factor = 1.0 / (subd * subd);
     ARGB total;
 
     for (int sx = 0; sx < sub; ++sx)
     {
-        double x = double((sx + 0.5) / subd) / w + pixel_x;
+        float x = float((sx + 0.5) / subd) / w + pixel_x;
 
         for (int sy = 0; sy < sub; ++sy)
         {
-            double y = double((sy + 0.5) / subd) / w + pixel_y;
+            float y = float((sy + 0.5) / subd) / w + pixel_y;
             auto start = std::chrono::high_resolution_clock::now();
 
             RayTraceResult result;
-            const Ray ray = CreateRay(config.Camera, w, h, x, y);
+            const ray ray = CreateRay(config.Camera, w, h, x, y);
             const RayTraceIteration iteration = TraceRay(scene, config, &result, ray);
 
             const std::chrono::nanoseconds elapsed = std::chrono::high_resolution_clock::now() - start;
@@ -150,9 +150,9 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
                 case RenderMode::Wireframe:
                     if (iteration.Hit)
                     {
-                        const double u = std::get<0>(iteration.UVCoordinates);
-                        const double v = std::get<1>(iteration.UVCoordinates);
-                        const double w = 1 - u - v;
+                        const float u = std::get<0>(iteration.UVCoordinates);
+                        const float v = std::get<1>(iteration.UVCoordinates);
+                        const float w = 1 - u - v;
                         const int h = std::min(w, std::min(u, v)) <= .01;
 
                         color = ARGB(h * u, h * v, h * w);
@@ -162,8 +162,8 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
                 case RenderMode::UVCoords:
                     if (iteration.Hit)
                     {
-                        const double u = std::get<0>(iteration.UVCoordinates);
-                        const double v = std::get<1>(iteration.UVCoordinates);
+                        const float u = std::get<0>(iteration.UVCoordinates);
+                        const float v = std::get<1>(iteration.UVCoordinates);
 
                         color = ARGB(u, v, 1 - u - v);
                     }
@@ -171,27 +171,27 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
                     break;
                 case RenderMode::SurfaceNormals:
                     if (iteration.Hit)
-                        color = iteration.SurfaceNormal.add(Vec3(1)).scale(.5);
+                        color = iteration.SurfaceNormal.add(vec3(1)).scale(.5f);
 
                     break;
                 case RenderMode::RayDirection:
-                    color = ray.Direction.add(Vec3(1)).scale(.5);
+                    color = ray.direction.add(vec3(1)).scale(.5f);
 
                     break;
                 case RenderMode::RayIncidenceAngle:
                     if (iteration.Hit)
-                        color = ARGB(1 - std::abs(ray.Direction.angle_to(iteration.SurfaceNormal) / ROT_90));
+                        color = ARGB(1 - std::abs(ray.direction.angle_to(iteration.SurfaceNormal) / ROT_90));
 
                     break;
                 case RenderMode::Iterations:
-                    color = ARGB(1.0 - result.size() / double(config.MaximumIterationCount));
+                    color = ARGB(1.f - result.size() / float(config.MaximumIterationCount));
 
                     break;
                 case RenderMode::RenderTime:
                 {
-                    const double µs = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
+                    const float µs = std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 
-                    color = ARGB(std::log10(µs) * 0.30293575075);
+                    color = ARGB(std::log10(µs) * .30293575075f);
                 } break;
                 default:
                     goto default_mode;
@@ -203,35 +203,35 @@ void ComputeRenderPass(const Scene* const scene, const RenderConfiguration& conf
 
     const size_t index = raw_x + size_t(raw_y * w);
 
-    buffer[index] = buffer[index] + total / double(config.SamplesPerSubpixel);
+    buffer[index] = buffer[index] + total / float(config.SamplesPerSubpixel);
 }
 
-inline Ray CreateRay(const CameraConfiguration& camera, const double w, const double h, const double x, const double y)
+inline ray CreateRay(const CameraConfiguration& camera, const float w, const float h, const float x, const float y)
 {
-    const double fov = 1.57079632679 / camera.ZoomFactor;
-    const Vec3 gaze = camera.LookAt.sub(camera.Position).normalize();
-    const Vec3 up = Vec3::UnitY;
-    const Vec3 camx = gaze.cross(up).normalize().scale(w * fov / h);
-    const Vec3 camy = camx.cross(gaze).normalize().scale(fov);
-    const double dx = 2 * DOUBLE_RAND / w;
-    const double dy = 2 * DOUBLE_RAND / h;
-    const Vec3 dir = gaze.add(camx.scale(x + dx))
+    const float fov = 1.57079632679f / camera.ZoomFactor;
+    const vec3 gaze = camera.LookAt.sub(camera.Position).normalize();
+    const vec3 up = vec3::UnitY;
+    const vec3 camx = gaze.cross(up).normalize().scale(w * fov / h);
+    const vec3 camy = camx.cross(gaze).normalize().scale(fov);
+    const float dx = 2 * float_RAND / w;
+    const float dy = 2 * float_RAND / h;
+    const vec3 dir = gaze.add(camx.scale(x + dx))
                          .add(camy.scale(y + dy))
                          .normalize();
 
-    Ray r(camera.Position + dir.scale(camera.FocalLength), dir, 0);
+    ray r(camera.Position + dir.scale(camera.FocalLength), dir, 0);
 
     return r;
 }
 
-inline RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& config, RayTraceResult* const result, const Ray& ray)
+inline RayTraceIteration TraceRay(const Scene* const scene, const RenderConfiguration& config, RayTraceResult* const result, const ray& ray)
 {
-    if (ray.IterationDepth < config.MaximumIterationCount)
+    if (ray.iteration_depth < config.MaximumIterationCount)
     {
         int iter_index = result->size();
         RayTraceIteration iteration;
         bool hit = false;
-        double distance = INFINITY;
+        float distance = INFINITY;
         bool inside = false;
 
         result->push_back(iteration);
@@ -239,8 +239,8 @@ inline RayTraceIteration TraceRay(const Scene* const scene, const RenderConfigur
         for (int i = 0, l = scene->mesh.size(); i < l; ++i)
         {
             const Primitive& primitive = scene->mesh[i];
-            std::tuple<double, double> uv;
-            double dist = INFINITY;
+            std::tuple<float, float> uv;
+            float dist = INFINITY;
             bool ins = false;
 
             if (primitive.intersect(ray, &dist, &ins, &uv) && dist < distance)
@@ -277,7 +277,7 @@ inline RayTraceIteration TraceRay(const Scene* const scene, const RenderConfigur
 inline void ComputeColor(const Scene* const scene, const RenderConfiguration& config, RayTraceIteration* const iteration)
 {
     const Material& mat = scene->mesh[iteration->TriangleIndex].material;
-    const Vec3& normal = iteration->SurfaceNormal;
+    const vec3& normal = iteration->SurfaceNormal;
 
     ARGB diffuse = ARGB::TRANSPARENT;
     ARGB specular = ARGB::TRANSPARENT;
@@ -289,25 +289,25 @@ inline void ComputeColor(const Scene* const scene, const RenderConfiguration& co
             diffuse = diffuse + mat.DiffuseColor * (light.diffuse_color * light.diffuse_intensity);
         else if (light.mode == Light::LightMode::Parallel)
         {
-            const double intensity = light.diffuse_intensity * light.direction.angle_to(normal);
+            const float intensity = light.diffuse_intensity * light.direction.angle_to(normal);
 
             if (intensity > 0)
                 diffuse = diffuse + (mat.DiffuseColor * (light.diffuse_color * intensity));
         }
         else if (light.mode == Light::LightMode::Spot)
         {
-            const double dist_sq = std::pow(light.position.distance_to(iteration->IntersectionPoint), 2);
+            const float dist_sq = std::pow(light.position.distance_to(iteration->IntersectionPoint), 2);
 
             if (light.diffuse_intensity > 0)
             {
-                const double diffuse_intensity = normal.normalize().dot(light.direction);
+                const float diffuse_intensity = normal.normalize().dot(light.direction);
 
                 diffuse = light.diffuse_color * (diffuse_intensity * light.diffuse_intensity / dist_sq);
             }
 
             if (light.specular_intensity > 0)
             {
-                const double specular_intensity = std::pow(light.direction.add(iteration->Ray.Direction).normalize().dot(normal), light.falloff_exponent);
+                const float specular_intensity = std::pow(light.direction.add(iteration->Ray.direction).normalize().dot(normal), light.falloff_exponent);
 
                 specular = light.specular_color * (specular_intensity * light.specular_intensity / dist_sq);
             }

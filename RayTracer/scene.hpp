@@ -52,10 +52,10 @@ struct MeshReference
         return shapes;
     }
 
-    inline double surface_area() const
+    inline float surface_area() const
     {
         std::vector<Primitive>* const mesh = reinterpret_cast<std::vector<Primitive>*>(_scene);
-        double area = 0;
+        float area = 0;
 
         if (mesh && mesh->size())
             for (const int index : _indices)
@@ -91,19 +91,19 @@ struct Light
     };
 
     const LightMode mode;
-    const Vec3 position;
-    const Vec3 direction;
+    const vec3 position;
+    const vec3 direction;
     const ARGB diffuse_color;
     const ARGB specular_color;
-    const double diffuse_intensity;
-    const double specular_intensity;
-    const double opening_angle;
-    const double falloff_exponent;
+    const float diffuse_intensity;
+    const float specular_intensity;
+    const float opening_angle;
+    const float falloff_exponent;
 
 
-    Light() : Light(ARGB::WHITE, ARGB::WHITE, Vec3(0, 10, 0), Vec3(0, -1, 0), 1, 1, DEG2RAD(20), 3, LightMode::Spot) { }
+    Light() : Light(ARGB::WHITE, ARGB::WHITE, vec3(0, 10, 0), vec3(0, -1, 0), 1, 1, DEG2RAD(20), 3, LightMode::Spot) { }
 
-    Light(const ARGB& diffuse, const ARGB& specular, const Vec3& pos, const Vec3& dir, const double diffuse_power, const double specular_power, const double opening_angle, const double falloff_exponent, const LightMode mode)
+    Light(const ARGB& diffuse, const ARGB& specular, const vec3& pos, const vec3& dir, const float diffuse_power, const float specular_power, const float opening_angle, const float falloff_exponent, const LightMode mode)
         : diffuse_color(diffuse)
         , specular_color(specular)
         , position(pos)
@@ -146,9 +146,9 @@ struct Scene
     {
     }
 
-    inline MeshReference add_triangle(const Vec3& a, const Vec3& b, const Vec3& c, EULER_OPTARG) noexcept
+    inline MeshReference add_triangle(const vec3& a, const vec3& b, const vec3& c, EULER_OPTARG) noexcept
     {
-        const std::vector<double> mat = Vec3::create_rotation_matrix(euler_angles);
+        const std::vector<float> mat = vec3::create_rotation_matrix(euler_angles);
         const Primitive triangle(a.transform(mat), b.transform(mat), c.transform(mat));
 
         return add_shape(triangle);
@@ -161,7 +161,7 @@ struct Scene
         return MeshReference(this, mesh.size() - 1);
     }
 
-    inline MeshReference add_plane(const Vec3& a, const Vec3& b, const Vec3& c, const Vec3& d, EULER_OPTARG) noexcept
+    inline MeshReference add_plane(const vec3& a, const vec3& b, const vec3& c, const vec3& d, EULER_OPTARG) noexcept
     {
         return MeshReference(this, std::vector<MeshReference>
         {
@@ -170,37 +170,37 @@ struct Scene
         });
     }
 
-    inline MeshReference add_planeXY(const Vec3& pos, const double& size, EULER_OPTARG) noexcept
+    inline MeshReference add_planeXY(const vec3& pos, const float& size, EULER_OPTARG) noexcept
     {
         return add_planeXY(pos, size, size, euler_angles);
     }
 
-    inline MeshReference add_planeXY(const Vec3& pos, const double& width, const double& height, EULER_OPTARG) noexcept
+    inline MeshReference add_planeXY(const vec3& pos, const float& width, const float& height, EULER_OPTARG) noexcept
     {
-        const auto mat = Vec3::create_rotation_matrix(euler_angles);
-        const Vec3 x = Vec3(width / 2, 0, 0).transform(mat);
-        const Vec3 y = Vec3(0, height / 2, 0).transform(mat);
+        const auto mat = vec3::create_rotation_matrix(euler_angles);
+        const vec3 x = vec3(width / 2, 0, 0).transform(mat);
+        const vec3 y = vec3(0, height / 2, 0).transform(mat);
 
         return add_plane(pos.sub(x).add(y), pos.add(x).add(y), pos.add(x).sub(y), pos.sub(x).sub(y));
     }
 
-    inline MeshReference add_cube(const Vec3& center, const double& size, EULER_OPTARG) noexcept
+    inline MeshReference add_cube(const vec3& center, const float& size, EULER_OPTARG) noexcept
     {
         return add_cube(center, size, size, size, euler_angles);
     }
 
-    inline MeshReference add_cube(const Vec3& center, const double& size_x, const double& size_y, const double& size_z, EULER_OPTARG) noexcept
+    inline MeshReference add_cube(const vec3& center, const float& size_x, const float& size_y, const float& size_z, EULER_OPTARG) noexcept
     {
-        const auto mat = Vec3::create_rotation_matrix(euler_angles);
-        const double x = size_x / 2, y = size_y / 2, z = size_z / 2;
-        const Vec3 a = center.add(Vec3(x, y, z).transform(mat));
-        const Vec3 b = center.add(Vec3(x, y, -z).transform(mat));
-        const Vec3 c = center.add(Vec3(-x, y, -z).transform(mat));
-        const Vec3 d = center.add(Vec3(-x, y, z).transform(mat));
-        const Vec3 e = center.add(Vec3(x, -y, z).transform(mat));
-        const Vec3 f = center.add(Vec3(x, -y, -z).transform(mat));
-        const Vec3 g = center.add(Vec3(-x, -y, -z).transform(mat));
-        const Vec3 h = center.add(Vec3(-x, -y, z).transform(mat));
+        const auto mat = vec3::create_rotation_matrix(euler_angles);
+        const float x = size_x / 2, y = size_y / 2, z = size_z / 2;
+        const vec3 a = center.add(vec3(x, y, z).transform(mat));
+        const vec3 b = center.add(vec3(x, y, -z).transform(mat));
+        const vec3 c = center.add(vec3(-x, y, -z).transform(mat));
+        const vec3 d = center.add(vec3(-x, y, z).transform(mat));
+        const vec3 e = center.add(vec3(x, -y, z).transform(mat));
+        const vec3 f = center.add(vec3(x, -y, -z).transform(mat));
+        const vec3 g = center.add(vec3(-x, -y, -z).transform(mat));
+        const vec3 h = center.add(vec3(-x, -y, z).transform(mat));
         std::vector<MeshReference> references
         {
             add_plane(a, b, c, d),
@@ -214,23 +214,23 @@ struct Scene
         return MeshReference(this, references);
     }
 
-    inline MeshReference add_icosahedron(const Vec3& center, const double& size, EULER_OPTARG) noexcept
+    inline MeshReference add_icosahedron(const vec3& center, const float& size, EULER_OPTARG) noexcept
     {
-        constexpr double x = 0.525731112119133606;
-        constexpr double z = 0.850650808352039932;
-        const auto mat = Vec3::create_rotation_matrix(euler_angles);
-        const Vec3 v0 = center.add(Vec3(-x,  0,  z).scale(size).transform(mat));
-        const Vec3 v1 = center.add(Vec3( x,  0,  z).scale(size).transform(mat));
-        const Vec3 v2 = center.add(Vec3(-x,  0, -z).scale(size).transform(mat));
-        const Vec3 v3 = center.add(Vec3( x,  0, -z).scale(size).transform(mat));
-        const Vec3 v4 = center.add(Vec3( 0,  z,  x).scale(size).transform(mat));
-        const Vec3 v5 = center.add(Vec3( 0,  z, -x).scale(size).transform(mat));
-        const Vec3 v6 = center.add(Vec3( 0, -z,  x).scale(size).transform(mat));
-        const Vec3 v7 = center.add(Vec3( 0, -z, -x).scale(size).transform(mat));
-        const Vec3 v8 = center.add(Vec3( z,  x,  0).scale(size).transform(mat));
-        const Vec3 v9 = center.add(Vec3(-z,  x,  0).scale(size).transform(mat));
-        const Vec3 v10 = center.add(Vec3( z, -x, 0).scale(size).transform(mat));
-        const Vec3 v11 = center.add(Vec3(-z, -x, 0).scale(size).transform(mat));
+        constexpr float x = 0.525731112119133606;
+        constexpr float z = 0.850650808352039932;
+        const auto mat = vec3::create_rotation_matrix(euler_angles);
+        const vec3 v0 = center.add(vec3(-x,  0,  z).scale(size).transform(mat));
+        const vec3 v1 = center.add(vec3( x,  0,  z).scale(size).transform(mat));
+        const vec3 v2 = center.add(vec3(-x,  0, -z).scale(size).transform(mat));
+        const vec3 v3 = center.add(vec3( x,  0, -z).scale(size).transform(mat));
+        const vec3 v4 = center.add(vec3( 0,  z,  x).scale(size).transform(mat));
+        const vec3 v5 = center.add(vec3( 0,  z, -x).scale(size).transform(mat));
+        const vec3 v6 = center.add(vec3( 0, -z,  x).scale(size).transform(mat));
+        const vec3 v7 = center.add(vec3( 0, -z, -x).scale(size).transform(mat));
+        const vec3 v8 = center.add(vec3( z,  x,  0).scale(size).transform(mat));
+        const vec3 v9 = center.add(vec3(-z,  x,  0).scale(size).transform(mat));
+        const vec3 v10 = center.add(vec3( z, -x, 0).scale(size).transform(mat));
+        const vec3 v11 = center.add(vec3(-z, -x, 0).scale(size).transform(mat));
         std::vector<MeshReference> references
         {
             add_triangle(v0, v4, v1),
@@ -270,12 +270,12 @@ struct Scene
         // B---BC--C
 
         const TriangleData& triangle = mesh[triangle_idx].data.triangle;
-        const Vec3& A = triangle.A;
-        const Vec3& B = triangle.B;
-        const Vec3& C = triangle.C;
-        const Vec3 mAB = A.add(B).scale(.5);
-        const Vec3 mAC = A.add(C).scale(.5);
-        const Vec3 mBC = B.add(C).scale(.5);
+        const vec3& A = triangle.A;
+        const vec3& B = triangle.B;
+        const vec3& C = triangle.C;
+        const vec3 mAB = A.add(B).scale(.5);
+        const vec3 mAC = A.add(C).scale(.5);
+        const vec3 mBC = B.add(C).scale(.5);
 
         std::vector<MeshReference> references
         {
@@ -298,7 +298,7 @@ struct Scene
         return MeshReference(this, references);
     }
 
-    inline MeshReference add_triangularized_sphere(const Vec3& center, const double& radius, const unsigned int subdivison_level = 2) noexcept
+    inline MeshReference add_triangularized_sphere(const vec3& center, const float& radius, const unsigned int subdivison_level = 2) noexcept
     {
         MeshReference sphere = add_icosahedron(center, radius);
 
@@ -319,7 +319,7 @@ struct Scene
         return sphere;
     }
 
-    inline MeshReference add_sphere(const Vec3& center, const double& radius) noexcept
+    inline MeshReference add_sphere(const vec3& center, const float& radius) noexcept
     {
         return add_shape(Primitive(center, radius));
     }
@@ -331,23 +331,23 @@ struct Scene
         return light;
     }
 
-    inline const Light& add_spot_light(const Vec3& position, const Vec3& direction, const ARGB& color, const double intensity = 1, const double opening_angle = DEG2RAD(20), const double falloff_exp = 3)
+    inline const Light& add_spot_light(const vec3& position, const vec3& direction, const ARGB& color, const float intensity = 1, const float opening_angle = DEG2RAD(20), const float falloff_exp = 3)
     {
         const Light light(color, color, position, direction, intensity, intensity, opening_angle, falloff_exp, Light::LightMode::Spot);
 
         return add_light(light);
     }
 
-    inline const Light& add_global_light(const ARGB& color, const double intensity = 1) noexcept
+    inline const Light& add_global_light(const ARGB& color, const float intensity = 1) noexcept
     {
-        const Light light(color, color, Vec3::Zero, Vec3::UnitX, intensity, intensity, 0, 0, Light::LightMode::Spot);
+        const Light light(color, color, vec3::Zero, vec3::UnitX, intensity, intensity, 0, 0, Light::LightMode::Spot);
 
         return add_light(light);
     }
 
-    inline const Light& add_parallel_light(const Vec3& direction, const ARGB& color, const double intensity = 1) noexcept
+    inline const Light& add_parallel_light(const vec3& direction, const ARGB& color, const float intensity = 1) noexcept
     {
-        const Light light(color, color, Vec3::Zero, direction, intensity, intensity, 0, 0, Light::LightMode::Parallel);
+        const Light light(color, color, vec3::Zero, direction, intensity, intensity, 0, 0, Light::LightMode::Parallel);
 
         return add_light(light);
     }

@@ -32,6 +32,7 @@ namespace Visualizer
             this.button1 = new System.Windows.Forms.Button();
             this.pictureBox1 = new Visualizer.PictureBoxWithInterpolationMode();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label5 = new System.Windows.Forms.Label();
             this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             this.label4 = new System.Windows.Forms.Label();
@@ -57,7 +58,7 @@ namespace Visualizer
             // 
             this.button1.Location = new System.Drawing.Point(424, 41);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(464, 41);
+            this.button1.Size = new System.Drawing.Size(410, 41);
             this.button1.TabIndex = 0;
             this.button1.Text = "(RE)RENDER";
             this.button1.UseVisualStyleBackColor = true;
@@ -65,7 +66,7 @@ namespace Visualizer
             // 
             // pictureBox1
             // 
-            this.pictureBox1.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.pictureBox1.BackColor = System.Drawing.Color.Black;
             this.pictureBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pictureBox1.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
             this.pictureBox1.Location = new System.Drawing.Point(0, 0);
@@ -77,6 +78,7 @@ namespace Visualizer
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.checkBox1);
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.numericUpDown2);
             this.groupBox1.Controls.Add(this.label4);
@@ -97,6 +99,16 @@ namespace Visualizer
             this.groupBox1.Size = new System.Drawing.Size(1280, 120);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(840, 53);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(48, 19);
+            this.checkBox1.TabIndex = 13;
+            this.checkBox1.Text = "LIVE";
+            this.checkBox1.UseVisualStyleBackColor = true;
             // 
             // label5
             // 
@@ -275,6 +287,7 @@ namespace Visualizer
         private System.Windows.Forms.NumericUpDown numericUpDown1;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.NumericUpDown numericUpDown2;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }
 

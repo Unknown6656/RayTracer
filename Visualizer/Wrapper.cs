@@ -19,17 +19,17 @@ namespace Visualizer
 
     public struct Vec3
     {
-        public double X, Y, Z;
+        public float X, Y, Z;
 
-        public Vec3(double x, double y, double z) : this() => (X, Y, Z) = (x, y, z);
+        public Vec3(float x, float y, float z) : this() => (X, Y, Z) = (x, y, z);
     }
 
     public struct CameraConfiguration
     {
         public Vec3 Position;
         public Vec3 LookAt;
-        public double ZoomFactor;
-        public double FocalLength;
+        public float ZoomFactor;
+        public float FocalLength;
     }
 
     //[StructLayout(LayoutKind.Sequential)]
@@ -53,6 +53,6 @@ namespace Visualizer
         public static unsafe extern void DeleteScene(void** scene);
 
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern void RenderImage(void* scene, RenderConfiguration config, (double A, double R, double G, double B)* buffer, ref double progress);
+        public static unsafe extern void RenderImage(void* scene, RenderConfiguration config, (float A, float R, float G, float B)* buffer, ref float progress);
     }
 }

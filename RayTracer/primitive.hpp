@@ -5,17 +5,17 @@
 
 struct SphereData
 {
-    const Vec3 center;
-    const double radius;
-    const double radius2;
+    const vec3 center;
+    const float radius;
+    const float radius2;
 
 
-    SphereData() noexcept : SphereData(Vec3(), 1) {}
+    SphereData() noexcept : SphereData(vec3(), 1) {}
 
-    SphereData(const Vec3& center, const double& rad) noexcept
+    SphereData(const vec3& center, const float& rad) noexcept
         : center(center)
         , radius(rad)
-        , radius2(rad* rad)
+        , radius2(rad * rad)
     {
     }
 
@@ -24,13 +24,13 @@ struct SphereData
 
 struct TriangleData
 {
-    const Vec3 A, B, C;
-    const Vec3 non_normalized_normal;
+    const vec3 A, B, C;
+    const vec3 non_normalized_normal;
 
 
-    TriangleData() noexcept : TriangleData(Vec3::Zero, Vec3::UnitX, Vec3::UnitY) {}
+    TriangleData() noexcept : TriangleData(vec3::Zero, vec3::UnitX, vec3::UnitY) {}
 
-    TriangleData(const Vec3& a, const Vec3& b, const Vec3& c) noexcept
+    TriangleData(const vec3& a, const vec3& b, const vec3& c) noexcept
         : A(a)
         , B(b)
         , C(c)
@@ -66,18 +66,18 @@ struct Primitive
     const GeometryData data;
     Material material;
 private:
-    const double _area;
+    const float _area;
 
 
 public:
-    Primitive(const Vec3& A, const Vec3& B, const Vec3& C) noexcept
+    Primitive(const vec3& A, const vec3& B, const vec3& C) noexcept
         : type(PrimitiveType::Triangle)
         , data(GeometryData(TriangleData(A, B, C)))
         , _area(B.sub(A).cross(C.sub(A)).length() / 2)
     {
     }
 
-    Primitive(const Vec3& center, const double& radius) noexcept
+    Primitive(const vec3& center, const float& radius) noexcept
         : type(PrimitiveType::Sphere)
         , data(SphereData(center, radius))
         , _area(4 * 3.14159265358979323846 * radius * radius)
@@ -94,12 +94,12 @@ public:
         material = mat;
     }
 
-    inline double surface_area() const noexcept
+    inline float surface_area() const noexcept
     {
         return _area;
     }
 
-    inline Vec3 normal_at(const Vec3& vec) const
+    inline vec3 normal_at(const vec3& vec) const
     {
         switch (type)
         {
@@ -109,19 +109,19 @@ public:
                 return data.triangle.non_normalized_normal; // TODO : interpolate between all points
         }
 
-        return Vec3::Zero;
+        return vec3::Zero;
     }
 
-    inline std::tuple<double, double> UV_at(const Vec3& vec) const
+    inline std::tuple<float, float> UV_at(const vec3& vec) const
     {
-        double u = 0.0;
-        double v = 0.0;
+        float u = 0.0;
+        float v = 0.0;
 
         switch (type)
         {
             case PrimitiveType::Sphere:
             {
-                const Vec3& N = normal_at(vec);
+                const vec3& N = normal_at(vec);
 
                 u = std::atan2(N.X, N.Z);
                 v = std::acos(N.Y);
@@ -130,9 +130,9 @@ public:
             }
             case PrimitiveType::Triangle:
             {
-                const Vec3 PA = data.triangle.A.sub(vec);
-                const Vec3 PB = data.triangle.B.sub(vec);
-                const Vec3 PC = data.triangle.C.sub(vec);
+                const vec3 PA = data.triangle.A.sub(vec);
+                const vec3 PB = data.triangle.B.sub(vec);
+                const vec3 PC = data.triangle.C.sub(vec);
 
                 u = PB.cross(PC).length() / _area;
                 v = PC.cross(PA).length() / _area;
@@ -144,7 +144,7 @@ public:
         return std::make_tuple(u, v);
     }
 
-    inline bool intersect(const Ray& ray, double* const __restrict distance, bool* const __restrict inside, std::tuple<double, double>* const uv = nullptr) const
+    inline bool intersect(const ray& ray, float* const __restrict distance, bool* const __restrict inside, std::tuple<float, float>* const uv = nullptr) const
     {
         bool hit = false;
 
@@ -152,11 +152,11 @@ public:
         {
             case PrimitiveType::Sphere:
             {
-                const Vec3 L = ray.Origin - data.sphere.center;
-                const double a = ray.Direction.norm();
-                const double b = 2 * ray.Direction.dot(L);
-                const double c = L.norm() - data.sphere.radius2;
-                double x0, x1;
+                const vec3 L = ray.origin - data.sphere.center;
+                const float a = ray.direction.squared_length();
+                const float b = 2 * ray.direction.dot(L);
+                const float c = L.squared_length() - data.sphere.radius2;
+                float x0, x1;
 
                 hit = solve_quadratic(a, b, c, &x0, &x1);
 
@@ -171,7 +171,7 @@ public:
             }
             case PrimitiveType::Triangle:
             {
-                double u, v;
+                float u, v;
 
                 hit = ray.MöllerTrumboreIntersect(data.triangle.A, data.triangle.B, data.triangle.C, distance, &u, &v, inside);
 

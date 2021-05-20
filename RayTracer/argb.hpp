@@ -7,18 +7,18 @@ struct ARGB
 {
     static const ARGB BLACK, WHITE, TRANSPARENT, RED, GREEN, BLUE;
 
-    double A, R, G, B;
+    float A, R, G, B;
 
 
     ARGB() noexcept : ARGB(0) {}
 
-    ARGB(double gray) noexcept : ARGB(1, gray) {}
+    ARGB(float gray) noexcept : ARGB(1, gray) {}
 
-    ARGB(double a, double gray) noexcept : ARGB(gray, gray, gray) {}
+    ARGB(float a, float gray) noexcept : ARGB(gray, gray, gray) {}
 
-    ARGB(double r, double g, double b) noexcept : ARGB(1, r, g, b) {}
+    ARGB(float r, float g, float b) noexcept : ARGB(1, r, g, b) {}
 
-    ARGB(double a, double r, double g, double b) noexcept
+    ARGB(float a, float r, float g, float b) noexcept
         : A(a), R(r), G(g), B(b)
     {
     }
@@ -48,7 +48,7 @@ struct ARGB
         return ARGB(A - other.A, R - other.R, G - other.G, B - other.B);
     }
 
-    inline ARGB operator*(const double factor) const noexcept
+    inline ARGB operator*(const float factor) const noexcept
     {
         return ARGB(A * factor, R * factor, G * factor, B * factor);
     }
@@ -58,7 +58,7 @@ struct ARGB
         return ARGB(A * other.A, R * other.R, G * other.G, B * other.B);
     }
 
-    inline ARGB operator/(const double factor) const
+    inline ARGB operator/(const float factor) const
     {
         return ARGB(A / factor, R / factor, G / factor, B / factor);
     }
@@ -69,15 +69,15 @@ struct Material
     ARGB DiffuseColor;
     ARGB SpecularColor;
     ARGB EmissiveColor;
-    double EmissiveIntensity;
-    double Specularity;
-    double SpecularIndex;
-    double Reflectiveness;
-    double Refractiveness;
+    float EmissiveIntensity;
+    float Specularity;
+    float SpecularIndex;
+    float Reflectiveness;
+    float Refractiveness;
     ARGB RefractiveIndex;
 
 
-    inline double opacity() const noexcept
+    inline float opacity() const noexcept
     {
         return DiffuseColor.A;
     }
@@ -92,7 +92,7 @@ struct Material
         return mat;
     }
 
-    static inline const Material& reflective(const ARGB& base, const double reflectiveness) noexcept
+    static inline const Material& reflective(const ARGB& base, const float reflectiveness) noexcept
     {
         Material mat;
         mat.DiffuseColor = base;
@@ -101,7 +101,7 @@ struct Material
         return mat;
     }
 
-    static inline const Material& emissive(const ARGB& base, const double intensity) noexcept
+    static inline const Material& emissive(const ARGB& base, const float intensity) noexcept
     {
         Material mat;
         mat.DiffuseColor = base;
