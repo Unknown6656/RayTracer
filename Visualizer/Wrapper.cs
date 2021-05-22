@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using System.Text;
 
 
 namespace Visualizer
@@ -24,6 +23,11 @@ namespace Visualizer
         public Vec3(float x, float y, float z) : this() => (X, Y, Z) = (x, y, z);
     }
 
+    public struct ARGB
+    {
+        public float A, R, G, B;
+    }
+
     public struct CameraConfiguration
     {
         public Vec3 Position;
@@ -42,9 +46,10 @@ namespace Visualizer
         public ulong MaximumIterationCount;
         public CameraConfiguration Camera;
         public RenderMode RenderMode;
+        public bool Debug;
     };
 
-    public static class RayTracer
+    internal static class RayTracer
     {
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
         public static unsafe extern void CreateScene(void** scene);
@@ -53,6 +58,6 @@ namespace Visualizer
         public static unsafe extern void DeleteScene(void** scene);
 
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern void RenderImage(void* scene, RenderConfiguration config, (float A, float R, float G, float B)* buffer, ref float progress);
+        public static unsafe extern float RenderImage(void* scene, RenderConfiguration config, ARGB* buffer, ref float progress);
     }
 }
