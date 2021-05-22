@@ -3,43 +3,44 @@
 #include "scene.hpp"
 
 
-enum RenderMode
+enum render_mode
 {
-    Colors,
-    Wireframe,
-    UVCoords,
-    Depths,
-    SurfaceNormals,
-    RayIncidenceAngle,
-    RayDirection,
-    Iterations,
-    RenderTime,
+    colors,
+    wireframe,
+    uv_coords,
+    depths,
+    surface_normals,
+    ray_incidence_angle,
+    ray_direction,
+    iterations,
+    render_time,
 };
 
-struct CameraConfiguration
+struct camera_configuration
 {
-    vec3 Position;
-    vec3 LookAt;
-    float ZoomFactor;
-    float FocalLength;
+    vec3 position;
+    vec3 look_at;
+    float zoom_factor;
+    float focal_length;
 };
 
-struct RenderConfiguration
+struct render_configuration
 {
-    size_t HorizontalResolution;
-    size_t VerticalResolution;
-    size_t SubpixelsPerPixel;
-    size_t SamplesPerSubpixel;
-    size_t MaximumIterationCount;
-    CameraConfiguration Camera;
-    RenderMode RenderMode;
+    size_t horizontal_resolution;
+    size_t vertical_resolution;
+    size_t subpixels_per_pixel;
+    size_t samples_per_subpixel;
+    size_t maximum_iteration_count;
+    camera_configuration camera;
+    render_mode mode;
+    bool debug;
 };
 
 
-extern "C" __declspec(dllexport) void __cdecl CreateScene(Scene** const);
-extern "C" __declspec(dllexport) void __cdecl DeleteScene(Scene** const);
-extern "C" __declspec(dllexport) void __cdecl RenderImage(const Scene* const, RenderConfiguration const, ARGB* const, float* const = nullptr);
-extern "C" __declspec(dllexport) void __cdecl ComputeRenderPass(const Scene* const, const RenderConfiguration&, const int, const int, ARGB* const&);
-extern "C" __declspec(dllexport) inline ray __cdecl CreateRay(const CameraConfiguration&, const float, const float, const float, const float);
-extern "C" __declspec(dllexport) inline RayTraceIteration __cdecl TraceRay(const Scene* const, const RenderConfiguration&, RayTraceResult* const, const ray&);
-extern "C" __declspec(dllexport) inline void __cdecl ComputeColor(const Scene* const, const RenderConfiguration&, RayTraceIteration* const);
+extern "C" __declspec(dllexport) void __cdecl CreateScene(scene** const);
+extern "C" __declspec(dllexport) void __cdecl DeleteScene(scene** const);
+extern "C" __declspec(dllexport) float __cdecl RenderImage(const scene* const __restrict, render_configuration const, ARGB* const __restrict, float* const __restrict = nullptr);
+extern "C" __declspec(dllexport) void __cdecl ComputeRenderPass(const scene* const, const render_configuration&, const int, const int, ARGB* const&, const bool);
+extern "C" __declspec(dllexport) inline ray __cdecl CreateRay(const camera_configuration&, const float, const float, const float, const float);
+extern "C" __declspec(dllexport) inline ray_trace_iteration __cdecl TraceRay(const scene* const __restrict, const render_configuration&, ray_trace_result* const __restrict, const ray&);
+extern "C" __declspec(dllexport) inline void __cdecl ComputeColor(const scene* const __restrict, const render_configuration&, ray_trace_iteration* const __restrict);
