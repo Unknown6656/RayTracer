@@ -31,9 +31,11 @@ struct ray
         return ray(evaluate(at), next_dir, iteration_depth + 1);
     }
 
-    bool MöllerTrumboreIntersect(
+    bool möller_trumbore_intersect(
         const vec3& A, const vec3& B, const vec3& C,
-        float* const __restrict t, float* const __restrict u, float* const __restrict v,
+        float* const __restrict t,
+        float* const __restrict u,
+        float* const __restrict v,
         bool* const __restrict hit_backface
     ) const noexcept
     {
@@ -87,9 +89,7 @@ struct ray
     }
 };
 
-struct Triangle;
-
-struct RayTraceIteration
+struct ray_trace_iteration
 {
     ray Ray;
     bool Hit;
@@ -104,12 +104,13 @@ struct RayTraceIteration
     inline std::string to_string() const noexcept
     {
         std::stringstream ss;
+
         ss << "[R=" << Ray << ", D=" << Distance << ", N=" << SurfaceNormal << ", C=" << ComputedColor << "]";
 
         return ss.str();
     }
 
-    OSTREAM_OPERATOR(RayTraceIteration);
+    OSTREAM_OPERATOR(ray_trace_iteration);
 };
 
-typedef std::vector<RayTraceIteration> RayTraceResult;
+typedef std::vector<ray_trace_iteration> ray_trace_result;
