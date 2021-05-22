@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics;
 using System;
+using System.Runtime.InteropServices;
 
 namespace Visualizer
 {
@@ -42,9 +43,11 @@ namespace Visualizer
         public static Vec3 TARGET = new(0, 3, 0);
         public static unsafe void* SCENE = null;
 
-        private static readonly object _mutex = new();
-        private static int is_rendering = 0;
-        private static int is_pending = 0;
+        private readonly unsafe ARGB[] buffer = new ARGB[WIDTH * HEIGHT];
+        private readonly object _mutex = new();
+        private bool window_open = true;
+        private int is_rendering = 0;
+        private int is_pending = 0;
 
 
         public unsafe MainWindow()
@@ -90,6 +93,7 @@ namespace Visualizer
 
             Location = Properties.Settings.Default.WindowLocation;
 #endif
+            Task.Factory.StartNew(Bitmap_Updater);
         }
 
         private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
@@ -99,6 +103,45 @@ namespace Visualizer
             (Properties.Settings.Default.WindowLocation, Properties.Settings.Default.WindowSize) = WindowState == FormWindowState.Normal ? (Location, Size) : (RestoreBounds.Location, RestoreBounds.Size);
             Properties.Settings.Default.Save();
 #endif
+            window_open = false;
+        }
+
+        private async Task Bitmap_Updater()
+        {
+            while (window_open)
+                if (is_rendering != 0)
+                    unsafe
+                    {
+                        Bitmap bmp = new(WIDTH, HEIGHT, PixelFormat.Format32bppArgb);
+                        BitmapData dat = bmp.LockBits(new(0, 0, WIDTH, HEIGHT), ImageLockMode.ReadWrite, bmp.PixelFormat);
+                        uint* ptr = (uint*)dat.Scan0;
+
+                        Parallel.For(0, WIDTH * HEIGHT, i =>
+                        {
+                            ARGB color = buffer[i];
+                            float a = color.A;
+                            float r = color.R;
+                            float g = color.G;
+                            float b = color.B;
+                            uint b_a = a < 0 ? 0u : a > 1 ? 255u : (uint)(a * 255);
+                            uint b_r = r < 0 ? 0u : r > 1 ? 255u : (uint)(r * 255);
+                            uint b_g = g < 0 ? 0u : g > 1 ? 255u : (uint)(g * 255);
+                            uint b_b = b < 0 ? 0u : b > 1 ? 255u : (uint)(b * 255);
+
+                            ptr[i] = b_a << 24 | b_r << 16 | b_g << 8 | b_b;
+                        });
+
+                        bmp.UnlockBits(dat);
+                        Invoke(new MethodInvoker(delegate
+                        {
+                            using Image? old = pictureBox1.Image;
+
+                            pictureBox1.Image = bmp;
+                            old?.Dispose();
+                        }));
+                    }
+                else
+                    Task.Delay(15);
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -116,9 +159,13 @@ namespace Visualizer
 
             await Task.Factory.StartNew(delegate
             {
-                RenderConfiguration config = new RenderConfiguration
+                Stopwatch sw_total = new();
+
+                sw_total.Start();
+
+                RenderConfiguration config = new()
                 {
-                    Camera = new CameraConfiguration
+                    Camera = new()
                     {
                         Position = EYE,
                         LookAt = TARGET,
@@ -132,71 +179,32 @@ namespace Visualizer
                     SamplesPerSubpixel = (ulong)SAMPLES,
                     SubpixelsPerPixel = (ulong)SUBPIXELS,
                 };
-                (float A, float R, float G, float B)[] buffer = new (float, float, float, float)[config.HorizontalResolution * config.VerticalResolution];
                 float progress = 0;
-                unsafe void update_image()
+                float µs_render = -1;
+                Task.Factory.StartNew(delegate
                 {
-                    Bitmap bmp = new Bitmap(WIDTH, HEIGHT, PixelFormat.Format32bppArgb);
-                    BitmapData dat = bmp.LockBits(new(0, 0, WIDTH, HEIGHT), ImageLockMode.ReadWrite, bmp.PixelFormat);
-                    uint* ptr = (uint*)dat.Scan0;
-
-                    Parallel.For(0, buffer.Length, i =>
-                    {
-                        float a = buffer[i].A;
-                        float r = buffer[i].R;
-                        float g = buffer[i].G;
-                        float b = buffer[i].B;
-                        uint b_a = a < 0 ? 0u : a > 1 ? 255u : (uint)(a * 255);
-                        uint b_r = r < 0 ? 0u : r > 1 ? 255u : (uint)(r * 255);
-                        uint b_g = g < 0 ? 0u : g > 1 ? 255u : (uint)(g * 255);
-                        uint b_b = b < 0 ? 0u : b > 1 ? 255u : (uint)(b * 255);
-
-                        ptr[i] = b_a << 24 | b_r << 16 | b_g << 8 | b_b;
-                    });
-
-                    bmp.UnlockBits(dat);
-                    Invoke(new MethodInvoker(delegate
-                    {
-                        using Image? old = pictureBox1.Image;
-
-                        button1.Text = $"{progress * 100:F4} %";
-                        progressBar1.Value = (int)(progress * progressBar1.Maximum);
-                        pictureBox1.Image = bmp;
-                        old?.Dispose();
-                    }));
-                }
-
-                Stopwatch sw = new();
-                sw.Start();
-
-                bool finished = false;
-                Task updater = Task.Factory.StartNew(async delegate
-                {
-                    while (!finished)
-                    {
-                        update_image();
-
-                        await Task.Delay(1);
-                    }
+                    while (µs_render < 0)
+                        Invoke(new MethodInvoker(delegate
+                        {
+                            label6.Text = $"{progress * 100:F4} %";
+                            progressBar1.Value = (int)(progress * progressBar1.Maximum);
+                        }));
                 });
 
                 unsafe
                 {
-                    fixed ((float, float, float, float)* iptr = buffer)
-                        RayTracer.RenderImage(SCENE, config, iptr, ref progress);
+                    fixed (ARGB* ptr = buffer)
+                        µs_render = RayTracer.RenderImage(SCENE, config, ptr, ref progress);
                 }
-
-                finished = true;
-
-                sw.Stop();
-                update_image();
 
                 Invoke(new MethodInvoker(delegate
                 {
                     button1.Enabled = true;
                     progressBar1.Value = progressBar1.Maximum;
-                    button1.Text = $"(RE)RENDER                    previous: {sw.ElapsedMilliseconds:F4}ms";
-                    pictureBox1.Image?.Save("./render.png", ImageFormat.Png);
+
+                    sw_total.Stop();
+
+                    button1.Text = $"RE-RENDER\nprevious: {sw_total.ElapsedMilliseconds:F4}ms | {µs_render * .001:F4}ms";
                 }));
 
                 lock (_mutex)
@@ -264,5 +272,7 @@ namespace Visualizer
             if (checkBox1.Checked)
                 button1_Click(sender, e);
         }
+
+        private void button2_Click(object sender, EventArgs e) => pictureBox1.Image?.Save("./render.png", ImageFormat.Png);
     }
 }
