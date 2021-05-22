@@ -3,32 +3,32 @@
 #include "primitive.hpp"
 
 
-struct Scene;
+struct scene;
 
 
-struct MeshReference
+struct mesh_reference
 {
     std::vector<int> _indices;
-    Scene* _scene;
+    scene* _scene;
 
 
-    MeshReference(Scene* scene, int index)
-        : MeshReference(scene, std::vector<int>{ index })
+    mesh_reference(scene* scene, int index)
+        : mesh_reference(scene, std::vector<int>{ index })
     {
     }
 
-    MeshReference(Scene* scene, std::vector<int> indices) noexcept
+    mesh_reference(scene* scene, std::vector<int> indices) noexcept
     {
         _scene = scene;
         _indices = indices;
     }
 
-    MeshReference(Scene* scene, const std::vector<MeshReference>& references)
+    mesh_reference(scene* scene, const std::vector<mesh_reference>& references)
     {
         _scene = scene;
         _indices = std::vector<int>();
 
-        for (const MeshReference& reference : references)
+        for (const mesh_reference& reference : references)
             for (int index : reference._indices)
                 if (std::find(_indices.begin(), _indices.end(), index) == _indices.end())
                     _indices.push_back(index);
@@ -39,10 +39,10 @@ struct MeshReference
         return _indices.size();
     }
 
-    inline std::vector<Primitive> mesh() const noexcept
+    inline std::vector<primitive*> mesh() const noexcept
     {
-        std::vector<Primitive>* const mesh = reinterpret_cast<std::vector<Primitive>*>(_scene);
-        std::vector<Primitive> shapes;
+        std::vector<primitive*>* const mesh = reinterpret_cast<std::vector<primitive*>*>(_scene);
+        std::vector<primitive*> shapes;
 
         if (mesh && mesh->size())
             for (const int index : _indices)
@@ -54,43 +54,43 @@ struct MeshReference
 
     inline float surface_area() const
     {
-        std::vector<Primitive>* const mesh = reinterpret_cast<std::vector<Primitive>*>(_scene);
+        std::vector<primitive*>* const mesh = reinterpret_cast<std::vector<primitive*>*>(_scene);
         float area = 0;
 
         if (mesh && mesh->size())
             for (const int index : _indices)
                 if (index > 0 && index < mesh->size())
-                    area += mesh->at(index).surface_area();
+                    area += mesh->at(index)->surface_area();
 
         return area;
     }
 
     inline void set_material(const Material& mat) noexcept
     {
-        std::vector<Primitive>* const mesh = reinterpret_cast<std::vector<Primitive>*>(_scene);
+        std::vector<primitive*>* const mesh = reinterpret_cast<std::vector<primitive*>*>(_scene);
 
         if (mesh && mesh->size())
             for (const int index : _indices)
                 if (index > 0 && index < mesh->size())
-                    mesh->at(index).set_material(mat);
+                    mesh->at(index)->material = mat;
     }
 
-    inline static MeshReference Empty(Scene* scene) noexcept
+    inline static mesh_reference Empty(scene* scene) noexcept
     {
-        return MeshReference(scene, std::vector<int>());
+        return mesh_reference(scene, std::vector<int>());
     }
 };
 
-struct Light
+struct light
 {
-    enum class LightMode
+    enum class light_mode
     {
         Spot,
         Parallel,
         Global,
     };
 
-    const LightMode mode;
+    const light_mode mode;
     const vec3 position;
     const vec3 direction;
     const ARGB diffuse_color;
@@ -101,9 +101,9 @@ struct Light
     const float falloff_exponent;
 
 
-    Light() : Light(ARGB::WHITE, ARGB::WHITE, vec3(0, 10, 0), vec3(0, -1, 0), 1, 1, DEG2RAD(20), 3, LightMode::Spot) { }
+    light() : light(ARGB::WHITE, ARGB::WHITE, vec3(0, 10, 0), vec3(0, -1, 0), 1, 1, DEG2RAD(20), 3, light_mode::Spot) { }
 
-    Light(const ARGB& diffuse, const ARGB& specular, const vec3& pos, const vec3& dir, const float diffuse_power, const float specular_power, const float opening_angle, const float falloff_exponent, const LightMode mode)
+    light(const ARGB& diffuse, const ARGB& specular, const vec3& pos, const vec3& dir, const float diffuse_power, const float specular_power, const float opening_angle, const float falloff_exponent, const light_mode mode)
         : diffuse_color(diffuse)
         , specular_color(specular)
         , position(pos)
@@ -119,63 +119,68 @@ struct Light
     inline std::string to_string() const noexcept
     {
         std::stringstream ss;
-        ss << '[P=' << position << ",D=" << direction << ",O=" << opening_angle << ",F=" << falloff_exponent << ",DIFF=" << diffuse_intensity;
-        ss << diffuse_color << ",SPEC=" << specular_intensity << specular_color << ",M=" << (mode == LightMode::Parallel ? "par" : mode == LightMode::Global ? "glob" : "spot") << "]";
+
+        ss << "[P=" << position
+            << ",D=" << direction
+            << ",O=" << opening_angle
+            << ",F=" << falloff_exponent
+            << ",DIFF_I=" << diffuse_intensity << diffuse_color
+            << ",SPEC=" << specular_intensity << specular_color
+            << ",M=" << (mode == light_mode::Parallel ? "par" : mode == light_mode::Global ? "glob" : "spot") << "]";
 
         return ss.str();
     }
 
-    OSTREAM_OPERATOR(Light);
-    CPP_IS_FUCKING_RETARDED(Light);
+    OSTREAM_OPERATOR(light);
+    CPP_IS_FUCKING_RETARDED(light);
 };
 
-struct Scene
+struct scene
 {
     // static_assert(std::is_standard_layout_v<Scene>);
 
     // DO NOT CHANGE THE LAYOUT OF THIS STRUCT. IT WILL BREAK OTHERWISE !
-    std::vector<Primitive> mesh;
-    std::vector<Light> lights;
+    std::vector<primitive*> mesh;
+    std::vector<light> lights;
     ARGB background_color;
 
 
-    Scene() noexcept
-        : mesh(std::vector<Primitive>())
-        , lights(std::vector<Light>())
+    scene() noexcept
+        : mesh(std::vector<primitive*>())
+        , lights(std::vector<light>())
         , background_color(ARGB::BLACK)
     {
     }
 
-    inline MeshReference add_triangle(const vec3& a, const vec3& b, const vec3& c, EULER_OPTARG) noexcept
+    inline mesh_reference add_triangle(const vec3& a, const vec3& b, const vec3& c, EULER_OPTARG) noexcept
     {
         const std::vector<float> mat = vec3::create_rotation_matrix(euler_angles);
-        const Primitive triangle(a.transform(mat), b.transform(mat), c.transform(mat));
 
-        return add_shape(triangle);
+        return add_shape(new triangle(a.transform(mat), b.transform(mat), c.transform(mat)));
     }
 
-    inline MeshReference add_shape(const Primitive& shape) noexcept
+    inline mesh_reference add_shape(primitive* const shape) noexcept
     {
         mesh.push_back(shape);
 
-        return MeshReference(this, mesh.size() - 1);
+        return mesh_reference(this, mesh.size() - 1);
     }
 
-    inline MeshReference add_plane(const vec3& a, const vec3& b, const vec3& c, const vec3& d, EULER_OPTARG) noexcept
+    inline mesh_reference add_plane(const vec3& a, const vec3& b, const vec3& c, const vec3& d, EULER_OPTARG) noexcept
     {
-        return MeshReference(this, std::vector<MeshReference>
+        return mesh_reference(this, std::vector<mesh_reference>
         {
             add_triangle(a, b, c, euler_angles),
             add_triangle(c, d, a, euler_angles),
         });
     }
 
-    inline MeshReference add_planeXY(const vec3& pos, const float& size, EULER_OPTARG) noexcept
+    inline mesh_reference add_planeXY(const vec3& pos, const float& size, EULER_OPTARG) noexcept
     {
         return add_planeXY(pos, size, size, euler_angles);
     }
 
-    inline MeshReference add_planeXY(const vec3& pos, const float& width, const float& height, EULER_OPTARG) noexcept
+    inline mesh_reference add_planeXY(const vec3& pos, const float& width, const float& height, EULER_OPTARG) noexcept
     {
         const auto mat = vec3::create_rotation_matrix(euler_angles);
         const vec3 x = vec3(width / 2, 0, 0).transform(mat);
@@ -184,12 +189,12 @@ struct Scene
         return add_plane(pos.sub(x).add(y), pos.add(x).add(y), pos.add(x).sub(y), pos.sub(x).sub(y));
     }
 
-    inline MeshReference add_cube(const vec3& center, const float& size, EULER_OPTARG) noexcept
+    inline mesh_reference add_cube(const vec3& center, const float& size, EULER_OPTARG) noexcept
     {
         return add_cube(center, size, size, size, euler_angles);
     }
 
-    inline MeshReference add_cube(const vec3& center, const float& size_x, const float& size_y, const float& size_z, EULER_OPTARG) noexcept
+    inline mesh_reference add_cube(const vec3& center, const float& size_x, const float& size_y, const float& size_z, EULER_OPTARG) noexcept
     {
         const auto mat = vec3::create_rotation_matrix(euler_angles);
         const float x = size_x / 2, y = size_y / 2, z = size_z / 2;
@@ -201,7 +206,7 @@ struct Scene
         const vec3 f = center.add(vec3(x, -y, -z).transform(mat));
         const vec3 g = center.add(vec3(-x, -y, -z).transform(mat));
         const vec3 h = center.add(vec3(-x, -y, z).transform(mat));
-        std::vector<MeshReference> references
+        std::vector<mesh_reference> references
         {
             add_plane(a, b, c, d),
             add_plane(a, e, f, b),
@@ -211,13 +216,13 @@ struct Scene
             add_plane(e, h, g, f),
         };
 
-        return MeshReference(this, references);
+        return mesh_reference(this, references);
     }
 
-    inline MeshReference add_icosahedron(const vec3& center, const float& size, EULER_OPTARG) noexcept
+    inline mesh_reference add_icosahedron(const vec3& center, const float& size, EULER_OPTARG) noexcept
     {
-        constexpr float x = 0.525731112119133606;
-        constexpr float z = 0.850650808352039932;
+        constexpr float x = .525731112119133606;
+        constexpr float z = .850650808352039932;
         const auto mat = vec3::create_rotation_matrix(euler_angles);
         const vec3 v0 = center.add(vec3(-x,  0,  z).scale(size).transform(mat));
         const vec3 v1 = center.add(vec3( x,  0,  z).scale(size).transform(mat));
@@ -231,7 +236,7 @@ struct Scene
         const vec3 v9 = center.add(vec3(-z,  x,  0).scale(size).transform(mat));
         const vec3 v10 = center.add(vec3( z, -x, 0).scale(size).transform(mat));
         const vec3 v11 = center.add(vec3(-z, -x, 0).scale(size).transform(mat));
-        std::vector<MeshReference> references
+        std::vector<mesh_reference> references
         {
             add_triangle(v0, v4, v1),
             add_triangle(v0, v9, v4),
@@ -255,13 +260,13 @@ struct Scene
             add_triangle(v7, v2, v11)
         };
 
-        return MeshReference(this, references);
+        return mesh_reference(this, references);
     }
-    
-    inline MeshReference subdivide(const int triangle_idx)
+
+    inline mesh_reference subdivide(const int triangle_idx) noexcept
     {
         if (triangle_idx > 0 && triangle_idx < this->mesh.size())
-            return MeshReference::Empty(this);
+            return mesh_reference::Empty(this);
 
         //     A
         //    / \
@@ -269,85 +274,81 @@ struct Scene
         //  / \ / \
         // B---BC--C
 
-        const TriangleData& triangle = mesh[triangle_idx].data.triangle;
-        const vec3& A = triangle.A;
-        const vec3& B = triangle.B;
-        const vec3& C = triangle.C;
-        const vec3 mAB = A.add(B).scale(.5);
-        const vec3 mAC = A.add(C).scale(.5);
-        const vec3 mBC = B.add(C).scale(.5);
-
-        std::vector<MeshReference> references
+        const triangle* tri = reinterpret_cast<triangle*>(&mesh[triangle_idx]);
+        const vec3 mAB = tri->A.add(tri->B).scale(.5);
+        const vec3 mAC = tri->A.add(tri->C).scale(.5);
+        const vec3 mBC = tri->B.add(tri->C).scale(.5);
+        const std::vector<mesh_reference> references
         {
-            add_triangle(A, mAB, mAC),
-            add_triangle(mAB, B, mBC),
-            add_triangle(mAB, mBC, mAC),
-            add_triangle(mAC, mBC, C),
+            add_triangle(tri->A, mAB,    mAC   ),
+            add_triangle(mAB,    tri->B, mBC   ),
+            add_triangle(mAB,    mBC,    mAC   ),
+            add_triangle(mAC,    mBC,    tri->C),
         };
 
-        return MeshReference(this, references);
+        return mesh_reference(this, references);
     }
 
-    inline MeshReference subdivide(MeshReference& object)
+    inline mesh_reference subdivide(mesh_reference& object)
     {
-        std::vector<MeshReference> references;
+        std::vector<mesh_reference> references;
 
         for (const int index : object._indices)
             references.push_back(subdivide(index));
 
-        return MeshReference(this, references);
+        return mesh_reference(this, references);
     }
 
-    inline MeshReference add_triangularized_sphere(const vec3& center, const float& radius, const unsigned int subdivison_level = 2) noexcept
+    inline mesh_reference add_triangularized_sphere(const vec3& center, const float& radius, const unsigned int subdivison_level = 2) noexcept
     {
-        MeshReference sphere = add_icosahedron(center, radius);
+        mesh_reference sphere = add_icosahedron(center, radius);
 
         for (unsigned int i = 0; i < subdivison_level; ++i)
             sphere = subdivide(sphere);
 
         for (const int index : sphere._indices)
         {
-            const TriangleData& triangle = mesh[index].data.triangle;
+            const triangle* tri = reinterpret_cast<triangle*>(&mesh[index]);
 
-            mesh[index] = Primitive(
-                triangle.A.sub(center).normalize().scale(radius).add(center),
-                triangle.B.sub(center).normalize().scale(radius).add(center),
-                triangle.C.sub(center).normalize().scale(radius).add(center)
+            mesh[index] = new triangle(
+                tri->A.sub(center).normalize().scale(radius).add(center),
+                tri->B.sub(center).normalize().scale(radius).add(center),
+                tri->C.sub(center).normalize().scale(radius).add(center)
             );
         }
 
         return sphere;
     }
 
-    inline MeshReference add_sphere(const vec3& center, const float& radius) noexcept
+    inline mesh_reference add_sphere(const vec3& center, const float& radius) noexcept
     {
-        return add_shape(Primitive(center, radius));
+        return add_shape(new sphere(center, radius));
     }
 
-    inline const Light& add_light(const Light& light) noexcept
+    inline const light& add_light(const light& light) noexcept
     {
         lights.push_back(light);
 
         return light;
     }
 
-    inline const Light& add_spot_light(const vec3& position, const vec3& direction, const ARGB& color, const float intensity = 1, const float opening_angle = DEG2RAD(20), const float falloff_exp = 3)
+    inline const light& add_spot_light(const vec3& position, const vec3& direction, const ARGB& color, const float intensity = 1, const float opening_angle = DEG2RAD(20), const float falloff_exp = 3)
     {
-        const Light light(color, color, position, direction, intensity, intensity, opening_angle, falloff_exp, Light::LightMode::Spot);
+        const light light(color, color, position, direction, intensity, intensity, opening_angle, falloff_exp, light::light_mode::Spot);
 
         return add_light(light);
     }
 
-    inline const Light& add_global_light(const ARGB& color, const float intensity = 1) noexcept
+    inline const light& add_global_light(const ARGB& color, const float intensity = 1) noexcept
     {
-        const Light light(color, color, vec3::Zero, vec3::UnitX, intensity, intensity, 0, 0, Light::LightMode::Spot);
+        const light light(color, color, vec3::Zero, vec3::UnitX, intensity, intensity, 0, 0, light::light_mode::Spot);
 
         return add_light(light);
     }
 
-    inline const Light& add_parallel_light(const vec3& direction, const ARGB& color, const float intensity = 1) noexcept
+    inline const light& add_parallel_light(const vec3& direction, const ARGB& color, const float intensity = 1) noexcept
     {
-        const Light light(color, color, vec3::Zero, direction, intensity, intensity, 0, 0, Light::LightMode::Parallel);
+        const light light(color, color, vec3::Zero, direction, intensity, intensity, 0, 0, light::light_mode::Parallel);
 
         return add_light(light);
     }
