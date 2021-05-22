@@ -32,12 +32,13 @@ namespace Visualizer
             this.button1 = new System.Windows.Forms.Button();
             this.pictureBox1 = new Visualizer.PictureBoxWithInterpolationMode();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
+            this.label6 = new System.Windows.Forms.Label();
             this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.label5 = new System.Windows.Forms.Label();
             this.numericUpDown2 = new System.Windows.Forms.NumericUpDown();
             this.label4 = new System.Windows.Forms.Label();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
-            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.comboBox1 = new System.Windows.Forms.ComboBox();
             this.label3 = new System.Windows.Forms.Label();
             this.trackBar3 = new System.Windows.Forms.TrackBar();
@@ -45,6 +46,7 @@ namespace Visualizer
             this.label1 = new System.Windows.Forms.Label();
             this.trackBar2 = new System.Windows.Forms.TrackBar();
             this.trackBar1 = new System.Windows.Forms.TrackBar();
+            this.button2 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
@@ -56,11 +58,11 @@ namespace Visualizer
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(424, 41);
+            this.button1.Location = new System.Drawing.Point(545, 41);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(410, 41);
+            this.button1.Size = new System.Drawing.Size(289, 41);
             this.button1.TabIndex = 0;
-            this.button1.Text = "(RE)RENDER";
+            this.button1.Text = "RENDER";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -78,12 +80,14 @@ namespace Visualizer
             // 
             // groupBox1
             // 
+            this.groupBox1.Controls.Add(this.button2);
+            this.groupBox1.Controls.Add(this.progressBar1);
+            this.groupBox1.Controls.Add(this.label6);
             this.groupBox1.Controls.Add(this.checkBox1);
             this.groupBox1.Controls.Add(this.label5);
             this.groupBox1.Controls.Add(this.numericUpDown2);
             this.groupBox1.Controls.Add(this.label4);
             this.groupBox1.Controls.Add(this.numericUpDown1);
-            this.groupBox1.Controls.Add(this.progressBar1);
             this.groupBox1.Controls.Add(this.comboBox1);
             this.groupBox1.Controls.Add(this.label3);
             this.groupBox1.Controls.Add(this.trackBar3);
@@ -99,6 +103,24 @@ namespace Visualizer
             this.groupBox1.Size = new System.Drawing.Size(1280, 120);
             this.groupBox1.TabIndex = 2;
             this.groupBox1.TabStop = false;
+            // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(424, 88);
+            this.progressBar1.MarqueeAnimationSpeed = 0;
+            this.progressBar1.Maximum = 1000;
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(410, 26);
+            this.progressBar1.TabIndex = 8;
+            // 
+            // label6
+            // 
+            this.label6.Location = new System.Drawing.Point(833, 88);
+            this.label6.Name = "label6";
+            this.label6.Size = new System.Drawing.Size(73, 23);
+            this.label6.TabIndex = 14;
+            this.label6.Text = "0 %";
+            this.label6.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // checkBox1
             // 
@@ -169,15 +191,6 @@ namespace Visualizer
             0});
             this.numericUpDown1.ValueChanged += new System.EventHandler(this.numericUpDown1_ValueChanged);
             // 
-            // progressBar1
-            // 
-            this.progressBar1.Location = new System.Drawing.Point(424, 88);
-            this.progressBar1.MarqueeAnimationSpeed = 0;
-            this.progressBar1.Maximum = 1000;
-            this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(464, 26);
-            this.progressBar1.TabIndex = 8;
-            // 
             // comboBox1
             // 
             this.comboBox1.FormattingEnabled = true;
@@ -247,6 +260,16 @@ namespace Visualizer
             this.trackBar1.TickStyle = System.Windows.Forms.TickStyle.TopLeft;
             this.trackBar1.Scroll += new System.EventHandler(this.trackBar1_Scroll);
             // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(424, 41);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(115, 41);
+            this.button2.TabIndex = 15;
+            this.button2.Text = "SAVE TO\r\n\"./render.png\"";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -288,6 +311,8 @@ namespace Visualizer
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.NumericUpDown numericUpDown2;
         private System.Windows.Forms.CheckBox checkBox1;
+        private System.Windows.Forms.Label label6;
+        private System.Windows.Forms.Button button2;
     }
 }
 

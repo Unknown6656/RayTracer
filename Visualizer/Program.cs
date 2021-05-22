@@ -4,7 +4,7 @@ using System.Threading;
 using Visualizer;
 
 
-Thread thread = new Thread(() =>
+Thread thread = new(() =>
 {
     Application.SetHighDpiMode(HighDpiMode.SystemAware);
     Application.EnableVisualStyles();
