@@ -3,14 +3,14 @@
 #include "argb.hpp"
 
 #define EULER_ARG const vec3& euler_angles
-#define EULER_OPTARG EULER_ARG = vec3(0, 0, 0)
-#define RAD2DEG(x) ((x) * 57.2957795131)
-#define DEG2RAD(x) ((x) * 0.01745329251)
-#define ROT_45 DEG2RAD(45)
-#define ROT_90 DEG2RAD(90)
-#define ROT_135 DEG2RAD(135)
-#define ROT_180 DEG2RAD(180)
-#define ROT_270 DEG2RAD(270)
+#define EULER_OPTARG EULER_ARG = vec3(0.f, 0.f, 0.f)
+#define RAD2DEG(x) ((x) * 57.2957795131f)
+#define DEG2RAD(x) ((x) * .01745329251f)
+#define ROT_45 DEG2RAD(45.f)
+#define ROT_90 DEG2RAD(90.f)
+#define ROT_135 DEG2RAD(135.f)
+#define ROT_180 DEG2RAD(180.f)
+#define ROT_270 DEG2RAD(270.f)
 
 
 struct vec3
@@ -20,7 +20,7 @@ struct vec3
     const float X, Y, Z;
 
 
-    vec3() noexcept : vec3(0) {}
+    vec3() noexcept : vec3(0.f) {}
 
     vec3(float v) noexcept : vec3(v, v, v) {}
 
