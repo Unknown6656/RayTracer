@@ -43,15 +43,7 @@ namespace ray_tracer_2d
             return ray2(evaluate(at), next_dir, iteration_depth + 1, new_refraction_index, !is_inside);
         }
 
-        inline std::string to_string() const noexcept
-        {
-            std::stringstream ss;
-            ss << "[O=" << origin << ", D=" << direction << ", I=" << iteration_depth << ']';
-
-            return ss.str();
-        }
-
-        OSTREAM_OPERATOR(ray2);
+        TO_STRING(ray2, "O=" << origin << ", D=" << direction << ", I=" << iteration_depth);
         CPP_IS_FUCKING_RETARDED(ray2);
 
         inline vec2 operator()(const float at) const noexcept
@@ -60,29 +52,20 @@ namespace ray_tracer_2d
         }
     };
 
-    struct ray_trace_iteration
-    {
-        ray2 Ray;
-        bool Hit;
-        float Distance;
-        ARGB ComputedColor;
-        vec2 SurfaceNormal;
-        vec2 IntersectionPoint;
-        std::tuple<float, float> UVCoordinates;
-        int TriangleIndex;
+    //struct ray_trace_iteration
+    //{
+    //    ray2 Ray;
+    //    bool Hit;
+    //    float Distance;
+    //    ARGB ComputedColor;
+    //    vec2 SurfaceNormal;
+    //    vec2 IntersectionPoint;
+    //    std::tuple<float, float> UVCoordinates;
+    //    int TriangleIndex;
+    //
+    //
+    //    TO_STRING(ray_trace_iteration, "R=" << Ray << ", D=" << Distance << ", N=" << SurfaceNormal << ", C=" << ComputedColor);
+    //};
 
-
-        inline std::string to_string() const noexcept
-        {
-            std::stringstream ss;
-
-            ss << "[R=" << Ray << ", D=" << Distance << ", N=" << SurfaceNormal << ", C=" << ComputedColor << "]";
-
-            return ss.str();
-        }
-
-        OSTREAM_OPERATOR(ray_trace_iteration);
-    };
-
-    typedef std::vector<ray_trace_iteration> ray_trace_result;
+    //typedef std::vector<ray_trace_iteration> ray_trace_result;
 };
