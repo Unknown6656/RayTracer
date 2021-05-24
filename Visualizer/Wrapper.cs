@@ -54,12 +54,12 @@ namespace Visualizer
     internal static class RayTracer
     {
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern void CreateScene(void** scene);
+        public static unsafe extern void* CreateScene3();
 
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern void DeleteScene(void** scene);
+        public static unsafe extern void DeleteScene3(void* scene);
 
         [DllImport("RayTracer.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static unsafe extern float RenderImage(void* scene, RenderConfiguration config, ARGB* buffer, ref float progress);
+        public static unsafe extern float RenderImage3(void* scene, RenderConfiguration config, ARGB* buffer, ref float progress);
     }
 }

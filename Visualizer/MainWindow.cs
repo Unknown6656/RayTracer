@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Diagnostics;
 using System;
-using System.Runtime.InteropServices;
 
 namespace Visualizer
 {
@@ -29,8 +28,8 @@ namespace Visualizer
         public static int SUBPIXELS = 2;
         public static int SAMPLES = 2;
 #else // low quality
-        public const int WIDTH = 720;
-        public const int HEIGHT = 405;
+        public const int WIDTH = 640;
+        public const int HEIGHT = 480;
         public const int MAX_ITER = 8;
         public static int SUBPIXELS = 1;
         public static int SAMPLES = 1;
@@ -58,15 +57,10 @@ namespace Visualizer
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             pictureBox1.InterpolationMode = InterpolationMode.NearestNeighbor;
 
-            fixed (void** ptr = &SCENE)
-                RayTracer.CreateScene(ptr);
+            SCENE = RayTracer.CreateScene3();
         }
 
-        unsafe ~MainWindow()
-        {
-            fixed (void** ptr = &SCENE)
-                RayTracer.DeleteScene(ptr);
-        }
+        unsafe ~MainWindow() => RayTracer.DeleteScene3(SCENE);
 
         private void MainWindow_Load(object sender, EventArgs e)
         {
@@ -197,7 +191,7 @@ namespace Visualizer
                 unsafe
                 {
                     fixed (ARGB* ptr = buffer)
-                        µs_render = RayTracer.RenderImage(SCENE, config, ptr, ref progress);
+                        µs_render = RayTracer.RenderImage3(SCENE, config, ptr, ref progress);
                 }
 
                 Invoke(new MethodInvoker(delegate
