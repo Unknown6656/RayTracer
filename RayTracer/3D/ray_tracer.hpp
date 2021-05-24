@@ -40,12 +40,32 @@ namespace ray_tracer_3d
         float air_refraction_index;
     };
 
+    struct ray_trace_iteration
+    {
+        ray3 ray;
+        hit_test hit;
+        ARGB computed_color;
+        vec3 surface_normal;
+        vec3 intersection_point;
+        primitive* primitive;
 
-    extern "C" __declspec(dllexport) void __cdecl CreateScene3(scene** const);
-    extern "C" __declspec(dllexport) void __cdecl DeleteScene3(scene** const);
+
+        TO_STRING(ray_trace_iteration, "R=" << ray
+                                    << ",H=" << hit
+                                    << ",N=" << surface_normal
+                                    << ",C=" << computed_color
+                                    << ",I=" << intersection_point
+                                    << ",P=" << (primitive ? primitive->to_string() : "[null]"));
+    };
+
+    typedef std::vector<ray_trace_iteration> ray_trace_result;
+
+
+    extern "C" __declspec(dllexport) scene* __cdecl CreateScene3();
+    extern "C" __declspec(dllexport) void __cdecl DeleteScene3(scene* const);
     extern "C" __declspec(dllexport) float __cdecl RenderImage3(const scene* const __restrict, render_configuration const, ARGB* const __restrict, float* const __restrict = nullptr);
-    extern "C" __declspec(dllexport) void __cdecl ComputeRenderPass3(const scene* const, const render_configuration&, const int, const int, ARGB* const&, const bool);
-    extern "C" __declspec(dllexport) inline ray3 __cdecl CreateRay3(const camera_configuration&, const float, const float, const float, const float);
+    extern "C" __declspec(dllexport) void __cdecl ComputeRenderPass3(const scene* const, const render_configuration&, const int, const int, ARGB* const&, const bool = true);
+    extern "C" __declspec(dllexport) inline ray3 __cdecl CreateRay3(const render_configuration&, const float, const float, const float, const float);
     extern "C" __declspec(dllexport) inline ray_trace_iteration __cdecl TraceRay3(const scene* const __restrict, const render_configuration&, ray_trace_result* const __restrict, const ray3&);
     extern "C" __declspec(dllexport) inline void __cdecl ComputeColor3(const scene* const __restrict, const render_configuration&, ray_trace_iteration* const __restrict);
 };
