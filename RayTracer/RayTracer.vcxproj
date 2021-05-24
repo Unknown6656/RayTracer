@@ -106,6 +106,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="2D\vec2.cpp" />
+    <ClCompile Include="3D\scene.cpp" />
     <ClCompile Include="argb.cpp" />
     <ClCompile Include="3D\primitive3.hpp" />
     <ClCompile Include="3D\ray_tracer.cpp" />

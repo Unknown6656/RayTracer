@@ -58,5 +58,8 @@
     <ClCompile Include="2D\vec2.cpp">
       <Filter>source</Filter>
     </ClCompile>
+    <ClCompile Include="3D\scene.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
