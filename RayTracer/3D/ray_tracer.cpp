@@ -4,7 +4,10 @@
 #define float_RAND (float(std::rand()) / RAND_MAX)
 
 
-void CreateScene(scene** const _scene)
+using namespace ray_tracer_3d;
+
+
+void ray_tracer_3d::CreateScene3(scene** const _scene)
 {
     if (_scene)
     {
@@ -12,7 +15,6 @@ void CreateScene(scene** const _scene)
         memset(*_scene, 0, sizeof(scene));
 
         **_scene = scene();
-        (*_scene)->background_color = ARGB::TRANSPARENT;
         (*_scene)->add_spot_light(vec3(1, 10, 1), vec3(0, -1, 0), ARGB(1, 1, .7), 100);
         // (*_scene)->add_parallel_light(Vec3(-1, -4, 1), ARGB(1, 1, .7), .4);
 
@@ -23,16 +25,16 @@ void CreateScene(scene** const _scene)
         mesh_reference ball = (*_scene)->add_sphere(vec3(0, 2, 0), 1.7);
         mesh_reference ico = (*_scene)->add_icosahedron(vec3(5, 3, -5), 2);
 
-        cube.set_material(Material::diffuse(ARGB::RED));
-        // back.set_material(Material::diffuse(ARGB::BLUE));
-        // left.set_material(Material::emissive(ARGB::GREEN, 0.2));
-        floor.set_material(Material::reflective(ARGB::BLACK, 1));
-        ball.set_material(Material::reflective(ARGB(.5, .7, .84), .8));
-        ico.set_material(Material::reflective(ARGB(.5, .7, .84), .8));
+        cube.set_material(material::diffuse(ARGB::RED));
+        // back.set_material(material::diffuse(ARGB::BLUE));
+        // left.set_material(material::emissive(ARGB::GREEN, 0.2));
+        floor.set_material(material::reflective(ARGB::BLACK, 1));
+        ball.set_material(material::reflective(ARGB(.5, .7, .84), .8));
+        ico.set_material(material::reflective(ARGB(.5, .7, .84), .8));
     }
 }
 
-void DeleteScene(scene** const scene)
+void ray_tracer_3d::DeleteScene3(scene** const scene)
 {
     if (scene && *scene)
     {
@@ -43,7 +45,7 @@ void DeleteScene(scene** const scene)
     }
 }
 
-float RenderImage(const scene* const __restrict scene, render_configuration const config, ARGB* const __restrict buffer, float* const __restrict progress)
+float ray_tracer_3d::RenderImage3(const scene* const __restrict scene, render_configuration const config, ARGB* const __restrict buffer, float* const __restrict progress)
 {
     assert(buffer != nullptr);
 
@@ -52,7 +54,7 @@ float RenderImage(const scene* const __restrict scene, render_configuration cons
     const int w = config.horizontal_resolution;
     const int h = config.vertical_resolution;
     const int sub = config.subpixels_per_pixel;
-    const size_t total_samples = float(w) * h * sub * sub * config.samples_per_subpixel;
+    const size_t total_samples = size_t(w) * h * sub * sub * config.samples_per_subpixel;
 
     if (config.debug)
         std::cout << std::endl << "----------------------------------------------------------------" << std::endl
@@ -81,7 +83,7 @@ float RenderImage(const scene* const __restrict scene, render_configuration cons
 
             concurrency::parallel_for(
                 size_t(0),
-                size_t(block_w * block_h),
+                size_t(block_w) * size_t(block_h),
                 [&](size_t index)
                 {
                     const int pixel_x = base_x + index % block_w;
@@ -89,7 +91,7 @@ float RenderImage(const scene* const __restrict scene, render_configuration cons
 
                     for (int sample = 0; sample < config.samples_per_subpixel; ++sample)
                     {
-                        ComputeRenderPass(scene, config, pixel_x, pixel_y, buffer, !sample);
+                        ComputeRenderPass3(scene, config, pixel_x, pixel_y, buffer, !sample);
 
                         if (progress)
                             *progress = float(++pass_counter) / (float(w) * h * config.samples_per_subpixel);
@@ -103,7 +105,7 @@ float RenderImage(const scene* const __restrict scene, render_configuration cons
     return std::chrono::duration_cast<std::chrono::microseconds>(elapsed).count();
 }
 
-void ComputeRenderPass(const scene* const scene, const render_configuration& config, const int raw_x, const int raw_y, ARGB* const& buffer, const bool clear)
+void ray_tracer_3d::ComputeRenderPass3(const scene* const scene, const render_configuration& config, const int raw_x, const int raw_y, ARGB* const& buffer, const bool clear)
 {
     const int w = config.horizontal_resolution;
     const int h = config.vertical_resolution;
@@ -128,8 +130,8 @@ void ComputeRenderPass(const scene* const scene, const render_configuration& con
             auto start = std::chrono::high_resolution_clock::now();
 
             ray_trace_result result;
-            const ray ray = CreateRay(config.camera, w, h, x, y);
-            const ray_trace_iteration iteration = TraceRay(scene, config, &result, ray);
+            const ray3 ray = CreateRay3(config.camera, w, h, x, y);
+            const ray_trace_iteration iteration = TraceRay3(scene, config, &result, ray);
 
             const std::chrono::nanoseconds elapsed = std::chrono::high_resolution_clock::now() - start;
             ARGB color = ARGB();
@@ -203,7 +205,7 @@ void ComputeRenderPass(const scene* const scene, const render_configuration& con
     buffer[index] = buffer[index] + total / float(config.samples_per_subpixel);
 }
 
-inline ray CreateRay(const camera_configuration& camera, const float w, const float h, const float x, const float y)
+ray3 ray_tracer_3d::CreateRay3(const camera_configuration& camera, const float w, const float h, const float x, const float y)
 {
     const float fov = 1.57079632679f / camera.zoom_factor;
     const vec3 gaze = camera.look_at.sub(camera.position).normalize();
@@ -216,12 +218,12 @@ inline ray CreateRay(const camera_configuration& camera, const float w, const fl
                          .add(camy.scale(y + dy))
                          .normalize();
 
-    ray r(camera.position + dir.scale(camera.focal_length), dir, 0);
+    ray3 r(camera.position + dir.scale(camera.focal_length), dir, 0);
 
     return r;
 }
 
-inline ray_trace_iteration TraceRay(const scene* const __restrict scene, const render_configuration& config, ray_trace_result* const __restrict result, const ray& ray)
+ray_trace_iteration ray_tracer_3d::TraceRay3(const scene* const __restrict scene, const render_configuration& config, ray_trace_result* const __restrict result, const ray3& ray)
 {
     if (ray.iteration_depth < config.maximum_iteration_count)
     {
@@ -257,11 +259,9 @@ inline ray_trace_iteration TraceRay(const scene* const __restrict scene, const r
         iteration.Distance = distance;
 
         if (!hit)
-            iteration.ComputedColor = scene->background_color;
+            iteration.ComputedColor = config.background_color;
         else
-        {
-            ComputeColor(scene, config, &iteration);
-        }
+            ComputeColor3(scene, config, &iteration);
 
         result->at(iter_index) = iteration;
 
@@ -271,9 +271,9 @@ inline ray_trace_iteration TraceRay(const scene* const __restrict scene, const r
     return ray_trace_iteration();
 }
 
-inline void ComputeColor(const scene* const __restrict scene, const render_configuration& config, ray_trace_iteration* const __restrict iteration)
+void ray_tracer_3d::ComputeColor3(const scene* const __restrict scene, const render_configuration& config, ray_trace_iteration* const __restrict iteration)
 {
-    const Material& mat = scene->mesh[iteration->TriangleIndex]->material;
+    const material& mat = scene->mesh[iteration->TriangleIndex]->material;
     const vec3& normal = iteration->SurfaceNormal;
 
     ARGB diffuse = ARGB::TRANSPARENT;
