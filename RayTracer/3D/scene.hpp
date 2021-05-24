@@ -7,13 +7,61 @@ namespace ray_tracer_3d
 {
     struct scene;
 
+    struct light
+    {
+        enum class light_mode
+        {
+            Spot,
+            Parallel,
+            Global,
+        };
+
+        const light_mode mode;
+        const vec3 position;
+        const vec3 direction;
+        const ARGB diffuse_color;
+        const ARGB specular_color;
+        const float diffuse_intensity;
+        const float specular_intensity;
+        const float opening_angle;
+        const float falloff_exponent;
+
+
+        light()
+            : light(ARGB::WHITE, ARGB::WHITE, vec3(0, 10, 0), vec3(0, -1, 0), 1, 1, DEG2RAD(20), 3, light_mode::Spot)
+        {
+        }
+
+        light(const ARGB& diffuse, const ARGB& specular, const vec3& pos, const vec3& dir, const float diffuse_power, const float specular_power, const float opening_angle, const float falloff_exponent, const light_mode mode)
+            : diffuse_color(diffuse)
+            , specular_color(specular)
+            , position(pos)
+            , direction(dir.normalize())
+            , opening_angle(opening_angle)
+            , falloff_exponent(falloff_exponent)
+            , diffuse_intensity(diffuse_power)
+            , specular_intensity(specular_power)
+            , mode(mode)
+        {
+        }
+
+        TO_STRING(light, "P=" << position
+                      << ",D=" << direction
+                      << ",O=" << opening_angle
+                      << ",F=" << falloff_exponent
+                      << ",DIFF_I=" << diffuse_intensity << diffuse_color
+                      << ",SPEC=" << specular_intensity << specular_color
+                      << ",M=" << (mode == light_mode::Parallel ? "par" : mode == light_mode::Global ? "glob" : "spot"));
+        CPP_IS_FUCKING_RETARDED(light);
+    };
+
     struct mesh_reference
     {
         std::vector<int> _indices;
         scene* _scene;
 
 
-        mesh_reference(scene* scene, int index)
+        mesh_reference(scene* scene, int index) noexcept
             : mesh_reference(scene, std::vector<int>{ index })
         {
         }
@@ -35,112 +83,24 @@ namespace ray_tracer_3d
                         _indices.push_back(index);
         }
 
-        inline int shape_count() const noexcept
-        {
-            return _indices.size();
-        }
+        int shape_count() const noexcept;
 
-        inline std::vector<primitive*> mesh() const noexcept
-        {
-            std::vector<primitive*>* const mesh = reinterpret_cast<std::vector<primitive*>*>(_scene);
-            std::vector<primitive*> shapes;
+        std::vector<primitive*> mesh() const noexcept;
 
-            if (mesh && mesh->size())
-                for (const int index : _indices)
-                    if (index > 0 && index < mesh->size())
-                        shapes.push_back(mesh->at(index));
+        float surface_area() const;
 
-            return shapes;
-        }
+        void set_material(const material& mat) noexcept;
 
-        inline float surface_area() const
-        {
-            std::vector<primitive*>* const mesh = reinterpret_cast<std::vector<primitive*>*>(_scene);
-            float area = 0;
-
-            if (mesh && mesh->size())
-                for (const int index : _indices)
-                    if (index > 0 && index < mesh->size())
-                        area += mesh->at(index)->surface_area();
-
-            return area;
-        }
-
-        inline void set_material(const material& mat) noexcept
-        {
-            std::vector<primitive*>* const mesh = reinterpret_cast<std::vector<primitive*>*>(_scene);
-
-            if (mesh && mesh->size())
-                for (const int index : _indices)
-                    if (index > 0 && index < mesh->size())
-                        mesh->at(index)->material = mat;
-        }
-
-        inline static mesh_reference Empty(scene* scene) noexcept
+        inline static mesh_reference empty(scene* scene) noexcept
         {
             return mesh_reference(scene, std::vector<int>());
         }
-    };
-
-    struct light
-    {
-        enum class light_mode
-        {
-            Spot,
-            Parallel,
-            Global,
-        };
-
-        const light_mode mode;
-        const vec3 position;
-        const vec3 direction;
-        const ARGB diffuse_color;
-        const ARGB specular_color;
-        const float diffuse_intensity;
-        const float specular_intensity;
-        const float opening_angle;
-        const float falloff_exponent;
-
-
-        light() : light(ARGB::WHITE, ARGB::WHITE, vec3(0, 10, 0), vec3(0, -1, 0), 1, 1, DEG2RAD(20), 3, light_mode::Spot) {}
-
-        light(const ARGB& diffuse, const ARGB& specular, const vec3& pos, const vec3& dir, const float diffuse_power, const float specular_power, const float opening_angle, const float falloff_exponent, const light_mode mode)
-            : diffuse_color(diffuse)
-            , specular_color(specular)
-            , position(pos)
-            , direction(dir.normalize())
-            , opening_angle(opening_angle)
-            , falloff_exponent(falloff_exponent)
-            , diffuse_intensity(diffuse_power)
-            , specular_intensity(specular_power)
-            , mode(mode)
-        {
-        }
-
-        inline std::string to_string() const noexcept
-        {
-            std::stringstream ss;
-
-            ss << "[P=" << position
-                << ",D=" << direction
-                << ",O=" << opening_angle
-                << ",F=" << falloff_exponent
-                << ",DIFF_I=" << diffuse_intensity << diffuse_color
-                << ",SPEC=" << specular_intensity << specular_color
-                << ",M=" << (mode == light_mode::Parallel ? "par" : mode == light_mode::Global ? "glob" : "spot") << "]";
-
-            return ss.str();
-        }
-
-        OSTREAM_OPERATOR(light);
-        CPP_IS_FUCKING_RETARDED(light);
     };
 
     struct scene
     {
         // static_assert(std::is_standard_layout_v<Scene>);
 
-        // DO NOT CHANGE THE LAYOUT OF THIS STRUCT. IT WILL BREAK OTHERWISE !
         std::vector<primitive*> mesh;
         std::vector<light> lights;
 
@@ -151,18 +111,37 @@ namespace ray_tracer_3d
         {
         }
 
+        inline mesh_reference add_triangularized_sphere(const vec3& center, const float& radius, const unsigned int subdivison_level = 2) noexcept
+        {
+            mesh_reference sphere = add_icosahedron(center, radius);
+
+            for (unsigned int i = 0; i < subdivison_level; ++i)
+                sphere = subdivide(sphere);
+
+            for (const int index : sphere._indices)
+            {
+                const triangle* tri = reinterpret_cast<triangle*>(&mesh[index]);
+
+                mesh[index] = new triangle(
+                    tri->A.sub(center).normalize().scale(radius).add(center),
+                    tri->B.sub(center).normalize().scale(radius).add(center),
+                    tri->C.sub(center).normalize().scale(radius).add(center)
+                );
+            }
+
+            return sphere;
+        }
+
+        inline mesh_reference add_sphere(const vec3& center, const float& radius) noexcept
+        {
+            return add_shape(new sphere(center, radius));
+        }
+
         inline mesh_reference add_triangle(const vec3& a, const vec3& b, const vec3& c, EULER_OPTARG) noexcept
         {
             const std::vector<float> mat = vec3::create_rotation_matrix(euler_angles);
 
             return add_shape(new triangle(a.transform(mat), b.transform(mat), c.transform(mat)));
-        }
-
-        inline mesh_reference add_shape(primitive* const shape) noexcept
-        {
-            mesh.push_back(shape);
-
-            return mesh_reference(this, mesh.size() - 1);
         }
 
         inline mesh_reference add_plane(const vec3& a, const vec3& b, const vec3& c, const vec3& d, EULER_OPTARG) noexcept
@@ -262,10 +241,17 @@ namespace ray_tracer_3d
             return mesh_reference(this, references);
         }
 
+        inline mesh_reference add_shape(primitive* const shape) noexcept
+        {
+            mesh.push_back(shape);
+
+            return mesh_reference(this, mesh.size() - 1);
+        }
+
         inline mesh_reference subdivide(const int triangle_idx) noexcept
         {
             if (triangle_idx > 0 && triangle_idx < this->mesh.size())
-                return mesh_reference::Empty(this);
+                return mesh_reference::empty(this);
 
             //     A
             //    / \
@@ -298,32 +284,6 @@ namespace ray_tracer_3d
             return mesh_reference(this, references);
         }
 
-        inline mesh_reference add_triangularized_sphere(const vec3& center, const float& radius, const unsigned int subdivison_level = 2) noexcept
-        {
-            mesh_reference sphere = add_icosahedron(center, radius);
-
-            for (unsigned int i = 0; i < subdivison_level; ++i)
-                sphere = subdivide(sphere);
-
-            for (const int index : sphere._indices)
-            {
-                const triangle* tri = reinterpret_cast<triangle*>(&mesh[index]);
-
-                mesh[index] = new triangle(
-                    tri->A.sub(center).normalize().scale(radius).add(center),
-                    tri->B.sub(center).normalize().scale(radius).add(center),
-                    tri->C.sub(center).normalize().scale(radius).add(center)
-                );
-            }
-
-            return sphere;
-        }
-
-        inline mesh_reference add_sphere(const vec3& center, const float& radius) noexcept
-        {
-            return add_shape(new sphere(center, radius));
-        }
-
         inline const light& add_light(const light& light) noexcept
         {
             lights.push_back(light);
@@ -331,7 +291,7 @@ namespace ray_tracer_3d
             return light;
         }
 
-        inline const light& add_spot_light(const vec3& position, const vec3& direction, const ARGB& color, const float intensity = 1, const float opening_angle = DEG2RAD(20), const float falloff_exp = 3)
+        inline const light& add_spot_light(const vec3& position, const vec3& direction, const ARGB& color, const float intensity = 1, const float opening_angle = DEG2RAD(20), const float falloff_exp = 3) noexcept
         {
             const light light(color, color, position, direction, intensity, intensity, opening_angle, falloff_exp, light::light_mode::Spot);
 
