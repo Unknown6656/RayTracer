@@ -47,6 +47,8 @@ namespace Visualizer
         public CameraConfiguration Camera;
         public RenderMode RenderMode;
         public bool Debug;
+        public ARGB BackgroundColor;
+        public float AirRefractionIndex;
     };
 
     internal static class RayTracer

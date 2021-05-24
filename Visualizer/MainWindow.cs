@@ -141,7 +141,7 @@ namespace Visualizer
                         }));
                     }
                 else
-                    Task.Delay(15);
+                    await Task.Delay(15);
         }
 
         private async void button1_Click(object sender, EventArgs e)
@@ -178,6 +178,9 @@ namespace Visualizer
                     MaximumIterationCount = MAX_ITER,
                     SamplesPerSubpixel = (ulong)SAMPLES,
                     SubpixelsPerPixel = (ulong)SUBPIXELS,
+                    Debug = false,
+                    AirRefractionIndex = 1f,
+                    BackgroundColor = default(ARGB),
                 };
                 float progress = 0;
                 float µs_render = -1;
