@@ -6,6 +6,21 @@
 
 namespace ray_tracer_3d
 {
+    struct hit_test
+    {
+        enum class hit_type
+        {
+            no_hit,
+            hit,
+            tangential_hit,
+        } type = hit_type::no_hit;
+        float distance = INFINITY;
+        vec2 uv;
+
+
+        TO_STRING(hit_test, (type == hit_type::hit ? "hit" : type == hit_type::tangential_hit ? "tangential-hit" : "no-hit") << ",D=" << distance << ",UV=" << uv);
+    };
+
     class primitive
     {
     protected:
@@ -32,9 +47,9 @@ namespace ray_tracer_3d
 
         virtual vec3 normal_at(const vec3& vec) const = 0;
 
-        virtual std::tuple<float, float> UV_at(const vec3& vec) const = 0;
+        virtual vec2 UV_at(const vec3& vec) const = 0;
 
-        virtual bool intersect(const ray3& ray, float* const __restrict distance, bool* const __restrict inside, std::tuple<float, float>* const __restrict uv = nullptr) const = 0;
+        virtual void intersect(const ray3& ray, hit_test* const result) const = 0;
 
         virtual std::string to_string() const noexcept = 0;
 
@@ -68,40 +83,74 @@ namespace ray_tracer_3d
             return non_normalized_normal; // TODO : interpolate between all points
         }
 
-        std::tuple<float, float> UV_at(const vec3& vec) const override
+        vec2 UV_at(const vec3& vec) const override
         {
-            float u = 0.0;
-            float v = 0.0;
             const vec3 PA = A.sub(vec);
             const vec3 PB = B.sub(vec);
             const vec3 PC = C.sub(vec);
 
-            u = PB.cross(PC).length() / _area;
-            v = PC.cross(PA).length() / _area;
-
-            return std::make_tuple(u, v);
+            return vec2(
+                PB.cross(PC).length() / _area,
+                PC.cross(PA).length() / _area
+            );
         }
 
-        bool intersect(const ray3& ray, float* const __restrict distance, bool* const __restrict inside, std::tuple<float, float>* const __restrict uv = nullptr) const override
+        bool möller_trumbore_intersect(
+            const ray3& ray,
+            float* const __restrict t,
+            float* const __restrict u,
+            float* const __restrict v,
+            bool* const __restrict hit_backface
+        ) const noexcept
         {
+            if (!t || !u || !v)
+                return false;
+
+            const vec3 edgeAB = B.sub(A);
+            const vec3 edgeAC = C.sub(A);
+            const vec3 pvec = ray.direction.cross(edgeAC);
+            const float det = edgeAB.dot(pvec);
+
+            if (std::abs(det) < EPSILON)
+                return false;
+            else if (hit_backface)
+                *hit_backface = det < 0;
+
+            const float inv_det = 1 / det;
+            const vec3 tvec = ray.origin.sub(A);
+
+            *u = tvec.dot(pvec) * inv_det;
+
+            if (*u < 0 || *u > 1)
+                return false;
+
+            const vec3 qvec = tvec.cross(edgeAB);
+
+            *v = ray.direction.dot(qvec) * inv_det;
+
+            if (*v < 0 || *u + *v > 1)
+                return false;
+
+            *t = edgeAC.dot(qvec) * inv_det;
+
+            return true;
+        }
+
+        void intersect(const ray3& ray, hit_test* const result) const override
+        {
+            *result = hit_test();
+
             float u, v;
-            bool hit = ray.möller_trumbore_intersect(A, B, C, distance, &u, &v, inside);
+            bool inside = false;
+            bool hit = möller_trumbore_intersect(ray, &result->distance, &u, &v, &inside);
 
-            if (uv)
-                *uv = std::make_tuple(u, v);
-
-            return hit;
+            result->uv = vec2(u, v);
+            result->type = hit ? inside ? hit_test::hit_type::hit
+                                        : hit_test::hit_type::tangential_hit
+                               : hit_test::hit_type::no_hit;
         }
 
-        std::string to_string() const noexcept override
-        {
-            std::stringstream ss;
-
-            ss << NAMEOF(triangle) << "[A=" << A << ",B=" << B << ",C=" << C << ",N=" << non_normalized_normal << ",Area=" << _area << "]";
-
-            return ss.str();
-        }
-
+        TO_STRING(triangle, "A=" << A << ",B=" << B << ",C=" << C << ",N=" << non_normalized_normal << ",Area=" << _area)
         CPP_IS_FUCKING_RETARDED(triangle);
     };
 
@@ -132,46 +181,41 @@ namespace ray_tracer_3d
             return vec.sub(center).normalize();
         }
 
-        std::tuple<float, float> UV_at(const vec3& vec) const override
+        vec2 UV_at(const vec3& vec) const override
         {
-            float u = 0.0;
-            float v = 0.0;
             const vec3& N = normal_at(vec);
 
-            u = std::atan2(N.X, N.Z);
-            v = std::acos(N.Y);
-
-            return std::make_tuple(u, v);
+            return vec2(
+                std::atan2(N.X, N.Z),
+                std::acos(N.Y)
+            );
         }
 
-        bool intersect(const ray3& ray, float* const __restrict distance, bool* const __restrict inside, std::tuple<float, float>* const __restrict uv = nullptr) const override
+        void intersect(const ray3& ray, hit_test* const result) const override
         {
-            const vec3 L = ray.origin - center;
+            const vec3 oc = ray.origin - center;
             const float a = ray.direction.squared_length();
-            const float b = 2 * ray.direction.dot(L);
-            const float c = L.squared_length() - radius2;
-            float x0, x1;
-            bool hit = solve_quadratic(a, b, c, &x0, &x1);
+            const float b = 2 * oc.dot(ray.direction);
+            const float c = oc.squared_length() - radius2;
+            const float discr = b * b - 4 * a * c;
 
-            if (x0 < 0)
-                x0 = x1;
+            if (discr < -EPSILON)
+                result->type = hit_test::hit_type::no_hit;
+            else
+            {
+                const vec3 point = ray(discr);
 
-            *inside = x0 < 0;
-            *distance = x0;
-            *uv = UV_at(ray.evaluate(x0));
+                result->uv = UV_at(point);
+                result->distance = discr;
 
-            return hit;
+                if (discr < EPSILON)
+                    result->type = hit_test::hit_type::tangential_hit;
+                else
+                    result->type = hit_test::hit_type::hit;
+            }
         }
 
-        std::string to_string() const noexcept override
-        {
-            std::stringstream ss;
-
-            ss << NAMEOF(sphere) << "sphere[C=" << center << ",R=" << radius << ",Area=" << _area << "]";
-
-            return ss.str();
-        }
-
+        TO_STRING(sphere, "C=" << center << ",R=" << radius << ",Area=" << _area);
         CPP_IS_FUCKING_RETARDED(sphere);
     };
 };

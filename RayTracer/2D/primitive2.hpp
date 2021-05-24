@@ -89,15 +89,7 @@ namespace ray_tracer_2d
             return false;
         }
 
-        std::string to_string() const noexcept override
-        {
-            std::stringstream ss;
-
-            ss << NAMEOF(triangle) << "[A=" << A << ",B=" << B << ",C=" << C << ",Area=" << _area << "]";
-
-            return ss.str();
-        }
-
+        TO_STRING(line2, "A=" << A << ", B=" << B);
         CPP_IS_FUCKING_RETARDED(line2);
     };
 
@@ -143,15 +135,6 @@ namespace ray_tracer_2d
 
         }
 
-        std::string to_string() const noexcept override
-        {
-            std::stringstream ss;
-
-            ss << NAMEOF(circle) << "[C=" << center << ",R=" << radius << ",Area=" << _area << "]";
-
-            return ss.str();
-        }
-
-        CPP_IS_FUCKING_RETARDED(circle2);
+        TO_STRING(circle2, "C=" << center << ",R=" << radius << ",Area=" << _area);
     };
 };
