@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "common.hpp"
 
@@ -23,15 +23,16 @@ struct ARGB
     {
     }
 
-    inline std::string to_string() const noexcept
-    {
-        std::stringstream ss;
-        ss << '[' << A << "," << R << "," << G << "," << B << ']';
-
-        return ss.str();
-    }
-
-    OSTREAM_OPERATOR(ARGB);
+    TO_STRING(ARGB, "α=" << A
+                << ",r=" << R
+                << ",g=" << G
+                << ",b=" << B
+                << ",#" << std::hex << std::setw(8) << (
+                    ((uint)(std::max(0.f, std::min(A, 1.f)) * 255.f) << 24) |
+                    ((uint)(std::max(0.f, std::min(R, 1.f)) * 255.f) << 16) |
+                    ((uint)(std::max(0.f, std::min(G, 1.f)) * 255.f) << 8) |
+                    ((uint)(std::max(0.f, std::min(B, 1.f)) * 255.f))
+                ) << std::dec);
 
     inline ARGB operator-() const noexcept
     {
@@ -61,5 +62,40 @@ struct ARGB
     inline ARGB operator/(const float factor) const
     {
         return ARGB(A / factor, R / factor, G / factor, B / factor);
+    }
+
+    inline ARGB operator/(const ARGB& other) const noexcept
+    {
+        return ARGB(A / other.A, R / other.R, G / other.G, B / other.B);
+    }
+
+    inline ARGB operator+=(const ARGB& other) const noexcept
+    {
+        return *this + other;
+    }
+
+    inline ARGB operator-=(const ARGB& other) const noexcept
+    {
+        return *this - other;
+    }
+
+    inline ARGB operator*=(const float other) const noexcept
+    {
+        return *this * other;
+    }
+
+    inline ARGB operator/=(const float factor) const
+    {
+        return *this / factor;
+    }
+
+    inline ARGB operator*=(const ARGB& other) const noexcept
+    {
+        return *this * other;
+    }
+
+    inline ARGB operator/=(const ARGB& factor) const
+    {
+        return *this / factor;
     }
 };
