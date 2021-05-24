@@ -121,15 +121,7 @@ namespace ray_tracer_2d
             return sub(origin).rotate(angle).add(origin);
         }
 
-        inline std::string to_string() const noexcept
-        {
-            std::stringstream ss;
-            ss << '[' << X << "," << Y << ']';
-
-            return ss.str();
-        }
-
-        OSTREAM_OPERATOR(vec2);
+        TO_STRING(vec2, X << ", " << Y);
         CPP_IS_FUCKING_RETARDED(vec2);
 
         inline vec2 operator+() const noexcept
@@ -182,12 +174,12 @@ namespace ray_tracer_2d
             return component_divide(other);
         }
 
-        inline vec2 operator+=(const vec2 other) const noexcept
+        inline vec2 operator+=(const vec2& other) const noexcept
         {
             return *this + other;
         }
 
-        inline vec2 operator-=(const vec2 other) const noexcept
+        inline vec2 operator-=(const vec2& other) const noexcept
         {
             return *this - other;
         }
@@ -202,12 +194,12 @@ namespace ray_tracer_2d
             return *this / factor;
         }
 
-        inline vec2 operator*=(const vec2 other) const noexcept
+        inline vec2 operator*=(const vec2& other) const noexcept
         {
             return *this * other;
         }
 
-        inline vec2 operator/=(const vec2 factor) const
+        inline vec2 operator/=(const vec2& factor) const
         {
             return *this / factor;
         }

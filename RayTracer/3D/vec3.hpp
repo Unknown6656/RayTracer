@@ -141,14 +141,6 @@ namespace ray_tracer_3d
             return sub(origin).rotate(euler_x, euler_y, euler_z).add(origin);
         }
 
-        inline std::string to_string() const noexcept
-        {
-            std::stringstream ss;
-            ss << '[' << X << "," << Y << "," << Z << ']';
-
-            return ss.str();
-        }
-
         static std::vector<float> create_rotation_matrix(EULER_ARG) noexcept
         {
             return create_rotation_matrix(euler_angles.X, euler_angles.Y, euler_angles.Z);
@@ -171,7 +163,7 @@ namespace ray_tracer_3d
             };
         }
 
-        OSTREAM_OPERATOR(vec3);
+        TO_STRING(vec3, X << ", " << Y << ", " << Z);
         CPP_IS_FUCKING_RETARDED(vec3);
 
         inline vec3 operator+() const noexcept
@@ -226,12 +218,12 @@ namespace ray_tracer_3d
             return component_divide(other);
         }
 
-        inline vec3 operator+=(const vec3 other) const noexcept
+        inline vec3 operator+=(const vec3& other) const noexcept
         {
             return *this + other;
         }
 
-        inline vec3 operator-=(const vec3 other) const noexcept
+        inline vec3 operator-=(const vec3& other) const noexcept
         {
             return *this - other;
         }
@@ -246,12 +238,12 @@ namespace ray_tracer_3d
             return *this / factor;
         }
 
-        inline vec3 operator*=(const vec3 other) const noexcept
+        inline vec3 operator*=(const vec3& other) const noexcept
         {
             return *this * other;
         }
 
-        inline vec3 operator/=(const vec3 factor) const
+        inline vec3 operator/=(const vec3& factor) const
         {
             return *this / factor;
         }
