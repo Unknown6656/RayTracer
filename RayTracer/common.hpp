@@ -32,10 +32,23 @@
 
 #define SIGN(x) ((x) > 0 ? 1 : (x) < 0 ? -1 : 0)
 
-#define OSTREAM_OPERATOR(x) friend inline std::ostream& operator<<(std::ostream& os, const x& value) { os << value.to_string(); return os; }
-#define CPP_IS_FUCKING_RETARDED(x) inline x& operator =(const x& value) noexcept { return this == &value ? *this : *new(this)x(value); }
-
 #define NAMEOF(x) #x
+
+#define CPP_IS_FUCKING_RETARDED(x) inline x& operator =(const x& value) noexcept { return this == &value ? *this : *new(this)x(value); }
+#define OSTREAM_OPERATOR(x) \
+    friend inline std::ostream& operator<<(std::ostream& os, const x& value) \
+    { \
+        os << value.to_string(); \
+        return os; \
+    }
+#define TO_STRING(x, s) \
+    OSTREAM_OPERATOR(x) \
+    inline std::string to_string() const noexcept \
+    { \
+        std::stringstream ss; \
+        ss << #x << "[" << s << "]"; \
+        return ss.str(); \
+    }
 
 #define ABSTRACT(ret, name, ...) \
     virtual ret name(__VA_ARGS__) const = 0 \
@@ -43,6 +56,10 @@
         std::cerr << "Using the abstract function '" #ret " " #name "(" #__VA_ARGS__ ")'." << std::endl; \
         return ret(); \
     }
+
+
+typedef unsigned long long ulong;
+typedef unsigned int uint;
 
 
 constexpr bool solve_quadratic(const float& a, const float& b, const float& c, float* __restrict const x0, float* __restrict const x1)
