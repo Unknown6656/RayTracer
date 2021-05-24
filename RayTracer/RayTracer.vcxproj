@@ -93,18 +93,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="2D\primitive2.hpp" />
+    <ClInclude Include="2D\ray2.hpp" />
+    <ClInclude Include="2D\vec2.hpp" />
+    <ClInclude Include="material.hpp" />
     <ClInclude Include="argb.hpp" />
     <ClInclude Include="common.hpp" />
-    <ClInclude Include="ray.hpp" />
-    <ClInclude Include="ray_tracer.hpp" />
-    <ClInclude Include="scene.hpp" />
-    <ClInclude Include="vec3.hpp" />
+    <ClInclude Include="3D\ray3.hpp" />
+    <ClInclude Include="3D\ray_tracer.hpp" />
+    <ClInclude Include="3D\scene.hpp" />
+    <ClInclude Include="3D\vec3.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="2D\vec2.cpp" />
     <ClCompile Include="argb.cpp" />
-    <ClCompile Include="primitive.hpp" />
-    <ClCompile Include="ray_tracer.cpp" />
-    <ClCompile Include="vec3.cpp" />
+    <ClCompile Include="3D\primitive3.hpp" />
+    <ClCompile Include="3D\ray_tracer.cpp" />
+    <ClCompile Include="3D\vec3.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
