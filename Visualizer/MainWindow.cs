@@ -28,8 +28,8 @@ namespace Visualizer
         public static int SUBPIXELS = 2;
         public static int SAMPLES = 2;
 #else // low quality
-        public const int WIDTH = 640;
-        public const int HEIGHT = 480;
+        public const int WIDTH = 480;
+        public const int HEIGHT = 360;
         public const int MAX_ITER = 8;
         public static int SUBPIXELS = 1;
         public static int SAMPLES = 1;

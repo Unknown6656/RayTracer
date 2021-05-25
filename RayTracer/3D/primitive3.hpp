@@ -193,7 +193,7 @@ namespace ray_tracer_3d
 
         void intersect(const ray3& ray, hit_test* const result) const override
         {
-            const vec3 oc = ray.origin - center;
+            const vec3 oc = ray.origin.sub(center);
             const float a = ray.direction.squared_length();
             const float b = 2 * oc.dot(ray.direction);
             const float c = oc.squared_length() - radius2;
@@ -203,15 +203,19 @@ namespace ray_tracer_3d
                 result->type = hit_test::hit_type::no_hit;
             else
             {
-                const vec3 point = ray(discr);
+                const float fac = .5f / a;
+                const float dist = std::max(-b - sqrt(discr), -b + sqrt(discr)) * fac;
 
-                result->uv = UV_at(point);
-                result->distance = discr;
+                if (dist > 0)
+                {
+                    const vec3 point = ray(dist);
 
-                if (discr < EPSILON)
-                    result->type = hit_test::hit_type::tangential_hit;
-                else
+                    result->uv = UV_at(point);
+                    result->distance = dist;
                     result->type = hit_test::hit_type::hit;
+                }
+                else
+                    result->type = hit_test::hit_type::tangential_hit;
             }
         }
 
