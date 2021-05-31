@@ -29,7 +29,7 @@ namespace ray_tracer_3d
 
         inline float squared_length() const noexcept
         {
-            return X * X + Y * Y + Z * Z;
+            return dot(*this);
         }
 
         inline float length() const noexcept
@@ -148,6 +148,13 @@ namespace ray_tracer_3d
 
         static std::vector<float> create_rotation_matrix(const float euler_x, const float euler_y, const float euler_z) noexcept
         {
+            if (euler_x == 0.f && euler_y == 0.f && euler_z == 0.f)
+                return std::vector<float>{
+                    1, 0, 0,
+                    0, 1, 0,
+                    0, 0, 1,
+                };
+
             const float sx = std::sin(euler_x);
             const float cx = std::cos(euler_x);
             const float sy = std::sin(euler_y);
