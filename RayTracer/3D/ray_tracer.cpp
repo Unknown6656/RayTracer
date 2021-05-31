@@ -137,7 +137,7 @@ void ray_tracer_3d::ComputeRenderPass3(const scene* const scene, const render_co
             {
                 case render_mode::depths:
                     if (is_hit)
-                        color = ARGB(1.f / (1 + .1f * iteration.hit.distance));
+                        color = ARGB(1.f / (1 + .25f * iteration.hit.distance));
 
                     break;
                 case render_mode::wireframe:
@@ -186,7 +186,13 @@ void ray_tracer_3d::ComputeRenderPass3(const scene* const scene, const render_co
 
                     color = ARGB(std::log10(µs) * .30293575075f);
                 } break;
-                case render_mode::colors:
+                case render_mode::hit_type:
+                    color = iteration.hit.type == hit_test::hit_type::no_hit ? ARGB::RED :
+                            iteration.hit.type == hit_test::hit_type::tangential_hit ? ARGB::BLUE : ARGB::GREEN;
+
+                    break;
+                case render_mode::realistic_colors:
+                case render_mode::diffuse_colors:
                 default:
                     color = iteration.computed_color;
 
@@ -265,43 +271,51 @@ void ray_tracer_3d::ComputeColor3(const scene* const __restrict scene, const ren
     const material& mat = iteration->primitive->material;
     const vec3& normal = iteration->surface_normal;
 
-    ARGB diffuse = ARGB::TRANSPARENT;
-    ARGB specular = ARGB::TRANSPARENT;
+    if (config.mode == render_mode::realistic_colors)
+    {
+        ARGB diffuse = ARGB::TRANSPARENT;
+        ARGB specular = ARGB::TRANSPARENT;
 
-
-    // LAMBERT DIFFUSE SHADING
-    for (const light& light : scene->lights)
-        if (light.mode == light::light_mode::Global)
-            diffuse = diffuse + mat.DiffuseColor * (light.diffuse_color * light.diffuse_intensity);
-        else if (light.mode == light::light_mode::Parallel)
-        {
-            const float intensity = light.diffuse_intensity * light.direction.angle_to(normal);
-
-            if (intensity > 0)
-                diffuse = diffuse + (mat.DiffuseColor * (light.diffuse_color * intensity));
-        }
-        else if (light.mode == light::light_mode::Spot)
-        {
-            const float dist_sq = std::pow(light.position.distance_to(iteration->intersection_point), 2);
-
-            if (light.diffuse_intensity > 0)
+        // LAMBERT DIFFUSE SHADING
+        for (const light& light : scene->lights)
+            if (light.mode == light::light_mode::Global)
+                diffuse = diffuse + mat.DiffuseColor * (light.diffuse_color * light.diffuse_intensity);
+            else if (light.mode == light::light_mode::Parallel)
             {
-                const float diffuse_intensity = normal.normalize().dot(light.direction);
+                const float intensity = light.diffuse_intensity * light.direction.angle_to(normal);
 
-                diffuse = light.diffuse_color * (diffuse_intensity * light.diffuse_intensity / dist_sq);
+                if (intensity > 0)
+                    diffuse = diffuse + (mat.DiffuseColor * (light.diffuse_color * intensity));
+            }
+            else if (light.mode == light::light_mode::Spot)
+            {
+                const float dist_sq = std::pow(light.position.distance_to(iteration->intersection_point), 2);
+
+                if (light.diffuse_intensity > 0)
+                {
+                    const float diffuse_intensity = normal.normalize().dot(light.direction);
+
+                    diffuse = light.diffuse_color * (diffuse_intensity * light.diffuse_intensity / dist_sq);
+                }
+
+                if (light.specular_intensity > 0)
+                {
+                    const float specular_intensity = std::pow(light.direction.add(iteration->ray.direction).normalize().dot(normal), light.falloff_exponent);
+
+                    specular = light.specular_color * (specular_intensity * light.specular_intensity / dist_sq);
+                }
             }
 
-            if (light.specular_intensity > 0)
-            {
-                const float specular_intensity = std::pow(light.direction.add(iteration->ray.direction).normalize().dot(normal), light.falloff_exponent);
+        iteration->computed_color = diffuse;
 
-                specular = light.specular_color * (specular_intensity * light.specular_intensity / dist_sq);
-            }
-        }
 
-    iteration->computed_color = diffuse;
+        //Vec3 direction = iteration->Ray.Direction.reflect(iteration->SurfaceNormal);
+        //RayTraceIteration i1 = TraceRay(scene, config, result, ray.create_next(distance, direction));
+    }
+    else if (config.mode == render_mode::diffuse_colors)
+        iteration->computed_color = mat.DiffuseColor;
+
+    // TODO : more?
 
     return;
-    //Vec3 direction = iteration->Ray.Direction.reflect(iteration->SurfaceNormal);
-    //RayTraceIteration i1 = TraceRay(scene, config, result, ray.create_next(distance, direction));
 }
