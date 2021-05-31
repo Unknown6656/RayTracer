@@ -7,9 +7,12 @@ namespace ray_tracer_3d
 {
     enum render_mode
     {
-        colors,
+        realistic_colors,
+        diffuse_colors,
+        // TODO
         wireframe,
         uv_coords,
+        hit_type,
         depths,
         surface_normals,
         ray_incidence_angle,

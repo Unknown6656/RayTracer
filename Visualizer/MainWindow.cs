@@ -34,7 +34,7 @@ namespace Visualizer
         public static int SUBPIXELS = 1;
         public static int SAMPLES = 1;
 #endif
-        public static RenderMode MODE = RenderMode.Colors;
+        public static RenderMode MODE = RenderMode.RealisticColors;
         public const float FOCAL_LENGTH = 1;
         public static float ZOOM = 2;
         public static float EYE_DIST = 18;

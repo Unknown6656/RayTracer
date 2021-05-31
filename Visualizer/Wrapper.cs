@@ -5,9 +5,12 @@ namespace Visualizer
 {
     public enum RenderMode
     {
-        Colors,
+        RealisticColors,
+        DiffuseColors,
+        //TODO
         Wireframe,
         UVCoords,
+        HitType,
         Depths,
         SurfaceNormals,
         RayIncidenceAngle,
