@@ -106,34 +106,37 @@ namespace ray_tracer_3d
             if (!t || !u || !v)
                 return false;
 
-            const vec3 edgeAB = B.sub(A);
-            const vec3 edgeAC = C.sub(A);
-            const vec3 pvec = ray.direction.cross(edgeAC);
-            const float det = edgeAB.dot(pvec);
+            const vec3 edge1 = B - A;
+            const vec3 edge2 = C - A;
+            const vec3 h = ray.direction.cross(edge2); // normalize edge2 ?
+            const float a = edge1.dot(h);
 
-            if (std::abs(det) < EPSILON)
-                return false;
-            else if (hit_backface)
-                *hit_backface = det < 0;
-
-            const float inv_det = 1 / det;
-            const vec3 tvec = ray.origin.sub(A);
-
-            *u = tvec.dot(pvec) * inv_det;
-
-            if (*u < 0 || *u > 1)
+            if (a < -EPSILON)
+            {
+                if (hit_backface)
+                    *hit_backface = true;
+            }
+            else if (a < EPSILON)
                 return false;
 
-            const vec3 qvec = tvec.cross(edgeAB);
+            const float f = 1.0 / a;
+            const vec3 s = ray.origin - A;
 
-            *v = ray.direction.dot(qvec) * inv_det;
+            *u = f * s.dot(h);
 
-            if (*v < 0 || *u + *v > 1)
+            if (*u < 0.f || *u > 1.f)
                 return false;
 
-            *t = edgeAC.dot(qvec) * inv_det;
+            const vec3 q = s.cross(edge1);
 
-            return true;
+            *v = f * ray.direction.dot(q);
+
+            if (*v < 0.f || *u + *v > 1.f)
+                return false;
+
+            *t = f * edge2.dot(q);
+
+            return *t > EPSILON;
         }
 
         void intersect(const ray3& ray, hit_test* const result) const override
