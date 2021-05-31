@@ -132,7 +132,7 @@ namespace ray_tracer_3d
             return sphere;
         }
 
-        inline mesh_reference add_sphere(const vec3& center, const float& radius) noexcept
+        inline mesh_reference add_sphere(const vec3& center, const float& radius = 1.f) noexcept
         {
             return add_shape(new sphere(center, radius));
         }
@@ -144,30 +144,49 @@ namespace ray_tracer_3d
             return add_shape(new triangle(a.transform(mat), b.transform(mat), c.transform(mat)));
         }
 
-        inline mesh_reference add_plane(const vec3& a, const vec3& b, const vec3& c, const vec3& d, EULER_OPTARG) noexcept
+        inline mesh_reference add_planeXY(const vec3& pos, const float& sizeX, const float& sizeY, EULER_OPTARG) noexcept
         {
+            const auto mat = vec3::create_rotation_matrix(euler_angles);
+            const vec3 x = vec3(sizeX / 2, 0, 0).transform(mat);
+            const vec3 y = vec3(0, sizeY / 2, 0).transform(mat);
+            const vec3 v00 = pos.sub(x).sub(y);
+            const vec3 v01 = pos.sub(x).add(y);
+            const vec3 v11 = pos.add(x).add(y);
+            const vec3 v10 = pos.add(x).sub(y);
+
             return mesh_reference(this, std::vector<mesh_reference>
             {
-                add_triangle(a, b, c, euler_angles),
-                    add_triangle(c, d, a, euler_angles),
+                add_triangle(v00, v01, v10, euler_angles),
+                add_triangle(v01, v11, v10, euler_angles),
             });
         }
 
-        inline mesh_reference add_planeXY(const vec3& pos, const float& size, EULER_OPTARG) noexcept
+        inline mesh_reference add_planeXY(const vec3& pos, const float& size = 1.f, EULER_OPTARG) noexcept
         {
             return add_planeXY(pos, size, size, euler_angles);
         }
 
-        inline mesh_reference add_planeXY(const vec3& pos, const float& width, const float& height, EULER_OPTARG) noexcept
+        inline mesh_reference add_planeXZ(const vec3& pos, const float& sizeX, const float& sizeZ, EULER_OPTARG) noexcept
         {
-            const auto mat = vec3::create_rotation_matrix(euler_angles);
-            const vec3 x = vec3(width / 2, 0, 0).transform(mat);
-            const vec3 y = vec3(0, height / 2, 0).transform(mat);
-
-            return add_plane(pos.sub(x).add(y), pos.add(x).add(y), pos.add(x).sub(y), pos.sub(x).sub(y));
+            return add_planeXY(pos, sizeX, sizeZ, euler_angles + vec3(ROT_90, 0.f, 0.f));
         }
 
-        inline mesh_reference add_cube(const vec3& center, const float& size, EULER_OPTARG) noexcept
+        inline mesh_reference add_planeXZ(const vec3& pos, const float& size = 1.f, EULER_OPTARG) noexcept
+        {
+            return add_planeXZ(pos, size, size, euler_angles);
+        }
+
+        inline mesh_reference add_planeYZ(const vec3& pos, const float& sizeY, const float& sizeZ, EULER_OPTARG) noexcept
+        {
+            return add_planeXY(pos, sizeZ, sizeY, euler_angles + vec3(-ROT_90, 0.f, 0.f));
+        }
+
+        inline mesh_reference add_planeYZ(const vec3& pos, const float& size = 1.f, EULER_OPTARG) noexcept
+        {
+            return add_planeYZ(pos, size, size, euler_angles);
+        }
+
+        inline mesh_reference add_cube(const vec3& center, const float& size = 1.f, EULER_OPTARG) noexcept
         {
             return add_cube(center, size, size, size, euler_angles);
         }
@@ -175,23 +194,24 @@ namespace ray_tracer_3d
         inline mesh_reference add_cube(const vec3& center, const float& size_x, const float& size_y, const float& size_z, EULER_OPTARG) noexcept
         {
             const auto mat = vec3::create_rotation_matrix(euler_angles);
-            const float x = size_x / 2, y = size_y / 2, z = size_z / 2;
-            const vec3 a = center.add(vec3(x, y, z).transform(mat));
-            const vec3 b = center.add(vec3(x, y, -z).transform(mat));
-            const vec3 c = center.add(vec3(-x, y, -z).transform(mat));
-            const vec3 d = center.add(vec3(-x, y, z).transform(mat));
-            const vec3 e = center.add(vec3(x, -y, z).transform(mat));
-            const vec3 f = center.add(vec3(x, -y, -z).transform(mat));
-            const vec3 g = center.add(vec3(-x, -y, -z).transform(mat));
-            const vec3 h = center.add(vec3(-x, -y, z).transform(mat));
+            const vec3 x = vec3(size_x / 2, 0, 0).transform(mat);
+            const vec3 y = vec3(0, size_y / 2, 0).transform(mat);
+            const vec3 z = vec3(0, 0, size_z / 2).transform(mat);
+            const vec3 v111 = center.add(x).add(y).add(z);
+            const vec3 v110 = center.add(x).add(y).sub(z);
+            const vec3 v010 = center.sub(x).add(y).sub(z);
+            const vec3 v011 = center.sub(x).add(y).add(z);
+            const vec3 v001 = center.sub(x).sub(y).add(z);
+            const vec3 v101 = center.add(x).sub(y).add(z);
+            const vec3 v100 = center.add(x).sub(y).sub(z);
+            const vec3 v000 = center.sub(x).sub(y).sub(z);
+
             std::vector<mesh_reference> references
             {
-                add_plane(a, b, c, d),
-                add_plane(a, e, f, b),
-                add_plane(b, f, g, c),
-                add_plane(c, g, h, d),
-                add_plane(d, h, e, a),
-                add_plane(e, h, g, f),
+
+
+
+
             };
 
             return mesh_reference(this, references);
